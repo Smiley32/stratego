@@ -4,10 +4,9 @@ project(STRATEGO
 )
 find_package(gf REQUIRED)
 find_package(Boost REQUIRED system)
-add_executable(stratego
+add_executable(test_client
   test.cpp
-  # and the rest of your sources
 )
-target_link_libraries(stratego
+target_link_libraries(test_client
   gf::gf0
 ) 
