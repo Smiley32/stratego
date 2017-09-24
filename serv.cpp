@@ -1,12 +1,27 @@
 #include <iostream>
 #include <string>
 
+#include <boost/array.hpp>
 #include <boost/asio.hpp>
 
 using boost::asio::ip::tcp;
 
-std::string say_hello() {
-  return "Salut !!!\n";
+std::string say_pret() {
+  return "Je suis pret, envoie-moi les coordonnées !\n";
+}
+
+std::string get_message(tcp::socket *socket) {
+  boost::array<char, 128> buf;
+  boost::system::error_code error;
+  
+  size_t len = socket->read_some(boost::asio::buffer(buf), error);
+  
+  if(error) {
+    throw boost::system::system_error(error);
+  }
+  
+  std::string data(buf.begin(), buf.begin() + len);
+  return data;
 }
 
 int main(int argc, char *argv[]) {
@@ -18,16 +33,29 @@ int main(int argc, char *argv[]) {
     
     // Le serveur n'accepte qu'une connection
     for(;;) {
-      // Socket pour le client
-      tcp::socket socket(io_service);
-      acceptor.accept(socket);
+      // Socket pour le 1er client (celui qui envoie les infos)
+      tcp::socket socket1(io_service);
+      acceptor.accept(socket1);
       
-      // Envoi du message au client
-      std::string message = say_hello();
+      // Socket pour le 2eme client
+      tcp::socket socket2(io_service);
+      acceptor.accept(socket2);
+
+      // On attend un message du premier socket (moins de 128 char)
+      for(;;) {
+        std::string msg = get_message(&socket1);
       
-      boost::system::error_code ignored_error;
-      boost::asio::write(socket, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
+        std::cout << msg << std::endl;
+        
+        // Envoi du message au client
+        boost::system::error_code ignored_error;
+        boost::asio::write(socket2, boost::asio::buffer(msg), boost::asio::transfer_all(), ignored_error);
+      }
+      
+      // Fin de l'attente de co
+      break;
     }
+    
   } catch(std::exception &e) {
     std::cerr << e.what() << std::endl;
   }
