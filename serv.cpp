@@ -18,6 +18,8 @@ std::string say_pret() {
  * @param tcp::socket *socket Le socket à utiliser
  * @return std::string Le message lu
  */
+
+ // Récupération d'un message du serveur
 std::string get_message(tcp::socket *socket) {
   // Tableau qui va stocket le message
   boost::array<char, 128> buf;
