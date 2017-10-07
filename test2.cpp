@@ -36,7 +36,7 @@ std::string get_message(tcp::socket *socket) {
   return data;
 }
 
-// Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
+// Thread qui va communiquer avec le serveur (le paramètre est juste un test)
 void reception_thread(std::string msg) {
   // Affichage du paramètre
   std::cout << msg << std::endl;
@@ -168,6 +168,7 @@ int main(int argc, char *argv[]) {
       // Mise à jour de l'affichage
       gf::Vector2f v = entity.getPosition();
       // Récupération de la dernière coordonnée de la file
+      //On retire la première position arrivé dans la file
       file.poll(v);
       entity.setPosition(v);
 

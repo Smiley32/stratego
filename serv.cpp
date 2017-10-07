@@ -18,6 +18,8 @@ std::string say_pret() {
  * @param tcp::socket *socket Le socket à utiliser
  * @return std::string Le message lu
  */
+
+ // Récupération d'un message du serveur
 std::string get_message(tcp::socket *socket) {
   // Tableau qui va stocket le message
   boost::array<char, 128> buf;
@@ -42,7 +44,7 @@ int main(int argc, char *argv[]) {
   try {
     boost::asio::io_service io_service;
 
-    // Ecoute des connection, sur TCP port 25565 avec IPv4
+    // Ecoute des connections, sur TCP port 25565 avec IPv4
     tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), 25565));
 
     // Le serveur n'accepte qu'une connection
