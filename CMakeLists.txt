@@ -13,6 +13,13 @@ add_executable(test_client2
 add_executable(test_serv
   serv.cpp
 )
+add_executable(stratego_serv
+  stratego_serv.cpp
+)
+add_executable(stratego_client
+  stratego_client.cpp
+)
+
 target_link_libraries(test_client
   gf::gf0
 )
@@ -20,5 +27,11 @@ target_link_libraries(test_client2
   gf::gf0
 )
 target_link_libraries(test_serv
+  gf::gf0
+)
+target_link_libraries(stratego_serv
+  gf::gf0
+)
+target_link_libraries(stratego_client
   gf::gf0
 )
