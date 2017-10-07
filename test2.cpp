@@ -36,7 +36,7 @@ std::string get_message(tcp::socket *socket) {
   return data;
 }
 
-// Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
+// Thread qui va communiquer avec le serveur (le paramètre est juste un test)
 void reception_thread(std::string msg) {
   // Affichage du paramètre
   std::cout << msg << std::endl;
