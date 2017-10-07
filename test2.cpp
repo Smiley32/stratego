@@ -168,6 +168,7 @@ int main(int argc, char *argv[]) {
       // Mise à jour de l'affichage
       gf::Vector2f v = entity.getPosition();
       // Récupération de la dernière coordonnée de la file
+      //On retire la première position arrivé dans la file
       file.poll(v);
       entity.setPosition(v);
 
