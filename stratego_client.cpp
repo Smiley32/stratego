@@ -6,6 +6,7 @@
 #include <gf/Vector.h>
 #include <gf/Window.h>
 #include <gf/Queue.h>
+#include <gf/Action.h>
 
 #include <gf/Sleep.h>
 #include <gf/Time.h>
@@ -44,15 +45,15 @@ void reception_thread(std::string msg) {
   try {
     boost::asio::io_service io_service;
     tcp::resolver resolver(io_service);
-    
+
     std::string ip;
     std::cout << "Entrez l'ip du serveur :" << std::endl;
     std::cin >> ip;
-    
+
     std::string port;
     std::cout << "Entrez le port du serveur :" << std::endl;
     std::cin >> port;
-    
+
     tcp::resolver::query query(ip, port);
 
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
@@ -89,6 +90,14 @@ int main(int argc, char *argv[]) {
   gf::Window window("Petit jeu en réseau (client)", ScreenSize);
   gf::RenderWindow renderer(window);
 
+  // Actions
+  gf::ActionContainer actions;
+
+  gf::Action closeWindowAction("Close window");
+  closeWindowAction.addCloseControl();
+  closeWindowAction.addKeycodeKeyControl(gf::Keycode::Escape);
+  actions.addAction(closeWindowAction);
+
   // Boucle de jeu
   renderer.clear(gf::Color::White);
 
@@ -97,13 +106,11 @@ int main(int argc, char *argv[]) {
 
       // Entrées
       while(window.pollEvent(event)) {
-        switch(event.type) {
-          case gf::EventType::Closed:
-            window.close();
-            break;
-          default:
-            break;
-        }
+        actions.processEvent(event);
+      }
+
+      if(closeWindowAction.isActive()) {
+        window.close();
       }
 
       gf::sleep(gf::milliseconds(10));

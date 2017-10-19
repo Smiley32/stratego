@@ -47,7 +47,7 @@ class Personnage
      *  @param int y: ordonnée cible
      *  @return bool: mouvement correct ou non
      */
-    bool checkMovement(int x, int y)
+    bool checkMovement(int x, int y);
 
   private:
 
