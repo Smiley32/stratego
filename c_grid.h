@@ -6,7 +6,8 @@
 
 class Grid {
 public:
-  Piece getPiece(gf::Vector2i pos);
+  Grid();
+  
 private:
   int grid[10][10];
 };
