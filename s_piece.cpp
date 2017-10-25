@@ -46,13 +46,30 @@ bool s_piece::checkMovement(int x, int y)
     return false;
   }
 
-  // Vérification le déplacement n'est pas plus de 1
-  if (abs(posX - x) > 1 || abs(posY - y) > 1 || (abs(posX - x) != 0 && abs(posY - y) != 0))
+  // Si on essaye de déplacer une bombe ou un drapeau
+  if (abs(value) == 11 || abs(value) == 12)
   {
     return false;
   }
 
-  //TODO Vérification case libre
+  // Vérification mouvement spécial éclaireur
+  if (abs(value) == 8)
+  {
+      if ((abs(posX - x) > 1 && abs(posY - y) == 0) || (abs(posY - y) > 1 && (abs(posX - x) == 0))
+      {
+        return true;
+      }
+
+      return false;
+  }
+  else
+  {
+    // Vérification le déplacement n'est pas plus de 1
+    if ((abs(posX - x) == 1 && abs(posY - y) == 0) || (abs(posY - y) == 1 && (abs(posX - x) == 0))
+    {
+      return false;
+    }
+  }
 
   return true;
 }
