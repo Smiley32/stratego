@@ -1,15 +1,24 @@
 #ifndef C_GRID_H
 #define C_GRID_H
 
-#include <gf/RenderWindow.h>
+#include <gf/Entity.h>
+#include <gf/TileLayer.h>
 #include "c_piece.h"
 
-class Grid {
+class Grid : public gf::Entity {
 public:
-  Grid();
-  
+  static constexpr unsigned TileSize = 64;
+
+  Grid(gf::ResourceManager& resources);
+  void createGrid();
+
+  virtual void render(gf::RenderTarget& target, const gf::RenderStates& states) override;
+
 private:
-  int grid[10][10];
+  static constexpr unsigned GridSize = 10;
+  gf::TileLayer m_layer;
+
+  Piece grid[GridSize][GridSize];
 };
 
 #endif

@@ -18,6 +18,7 @@ add_executable(stratego_serv
 )
 add_executable(stratego_client
   stratego_client.cpp
+  c_grid.cpp
 )
 
 target_link_libraries(test_client

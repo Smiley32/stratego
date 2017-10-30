@@ -6,29 +6,34 @@
 #include <gf/ResourceManager.h>
 #include <gf/Texture.h>
 
-class Piece {
-public:
-  Piece(gf::ResourceManager& resources);
+/**
+ * Camp de la piece : Other pour les éléments neutres (lac / case vide)
+ */
+enum class Side {Red, Blue, Other};
 
-  /**
-   * Dessiner la pièce à une position
-   *
-   * @param gf::RenderTarget& target  Renderer à utiliser
-   * @param gf::Vector2i pos          Position de la pièce (sur l'écran)
-   * @param int piece                 Le type de pièce à dessiner
-   */
-  void draw(gf::RenderTarget& target, gf::Vector2i pos, int piece);
-private:
-  // Taille des pièces : à modifier en fonction des sprites
-  int pieceWidth = 42;
-  int pieceHeight = 42;
+/**
+ * Rang de la piece :
+ * Bomb (6) - Ne bouge pas
+ * Marshal (1) - (no 10)
+ * General (1) - (no 9)
+ * Colonel (2) - (no 8)
+ * Major (3) - (no 7)
+ * Captain (4) - (no 6)
+ * Lieutenant (4) - (no 5)
+ * Sergeant (4) - (no 4)
+ * Miner (5) - (no 3)
+ * Scout (8) - (no 2)
+ * Spy (1) - (no 1)
+ * Flag (1) - Ne bouge pas
+ *
+ * Water - Case d'eau (8 en tout) - non accessibles
+ * Empty - Cases vides
+ */
+enum class Rank {Bomb, Marshal, General, Colonel, Major, Captain, Lieutenant, Sergeant, Miner, Scout, Spy, Flag, Water, Empty};
 
-  // Taille de l'image contenant les sprites
-  int tilesetWidth = 420;
-  int tilesetHeight = 420;
-
-  // Texture contenant les sprites
-  gf::Texture p_texture;
+struct Piece {
+  Side side;
+  Rank rank;
 };
 
 #endif
