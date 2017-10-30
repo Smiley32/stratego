@@ -29,7 +29,22 @@ enum class Side {Red, Blue, Other};
  * Water - Case d'eau (8 en tout) - non accessibles
  * Empty - Cases vides
  */
-enum class Rank {Bomb, Marshal, General, Colonel, Major, Captain, Lieutenant, Sergeant, Miner, Scout, Spy, Flag, Water, Empty};
+enum class Rank : int {
+  Bomb = 0,
+  Marshal = 1,
+  General = 2,
+  Colonel = 3,
+  Major = 4,
+  Captain = 5,
+  Lieutenant = 6,
+  Sergeant = 7,
+  Miner = 8,
+  Scout = 9,
+  Spy = 10,
+  Flag = 11,
+  Water = 12,
+  Empty = 13
+};
 
 struct Piece {
   Side side;

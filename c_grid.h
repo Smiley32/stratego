@@ -14,6 +14,8 @@ public:
 
   virtual void render(gf::RenderTarget& target, const gf::RenderStates& states) override;
 
+  Piece getPiece(gf::Vector2u coords);
+
 private:
   static constexpr unsigned GridSize = 10;
   gf::TileLayer m_layer;

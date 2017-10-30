@@ -7,6 +7,7 @@
 #include <gf/Window.h>
 #include <gf/Queue.h>
 #include <gf/Action.h>
+#include <gf/EntityContainer.h>
 
 #include <gf/Sleep.h>
 #include <gf/Time.h>
@@ -19,6 +20,8 @@
 
 #include <thread>
 #include <sstream>
+
+#include "c_grid.h"
 
 using boost::asio::ip::tcp;
 
@@ -82,12 +85,13 @@ void reception_thread(std::string msg) {
 
 int main(int argc, char *argv[]) {
 
-  std::thread rt(reception_thread, "Bonjour, je suis le thread de réception !");
+  // std::thread rt(reception_thread, "Bonjour, je suis le thread de réception !");
   // rt.join();
 
   // Initialisation
-  static constexpr gf::Vector2u ScreenSize(500, 500);
+  static constexpr gf::Vector2u ScreenSize(640, 640);
   gf::Window window("Petit jeu en réseau (client)", ScreenSize);
+  window.setFramerateLimit(60);
   gf::RenderWindow renderer(window);
 
   // Actions
@@ -98,8 +102,20 @@ int main(int argc, char *argv[]) {
   closeWindowAction.addKeycodeKeyControl(gf::Keycode::Escape);
   actions.addAction(closeWindowAction);
 
+  // Resource manager
+  gf::ResourceManager resources;
+  resources.addSearchDir(".");
+
+  gf::EntityContainer entities;
+
+  Grid g(resources);
+  g.createGrid();
+  entities.addEntity(g);
+
   // Boucle de jeu
   renderer.clear(gf::Color::White);
+
+  gf::Clock clock;
 
   while(window.isOpen()) {
       gf::Event event;
@@ -107,16 +123,27 @@ int main(int argc, char *argv[]) {
       // Entrées
       while(window.pollEvent(event)) {
         actions.processEvent(event);
+
+        if(event.type == gf::EventType::MouseMoved) {
+          std::cout << "Case : ( " << event.mouseCursor.coords.x / g.TileSize << " , " << event.mouseCursor.coords.y / g.TileSize << " )" << std::endl;
+          Piece p = g.getPiece({event.mouseCursor.coords.x / g.TileSize, event.mouseCursor.coords.y / g.TileSize});
+
+          std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
+        }
       }
 
       if(closeWindowAction.isActive()) {
         window.close();
       }
 
-      gf::sleep(gf::milliseconds(10));
-      // Récupération de la dernière coordonnée de la file
+      // Update
+      gf::Time time = clock.restart();
 
+      // Draw
       renderer.clear();
+      entities.render(renderer);
+
+      // Récupération de la dernière coordonnée de la file
       renderer.display();
   }
 
