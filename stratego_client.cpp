@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
   // rt.join();
 
   // Initialisation
-  static constexpr gf::Vector2u ScreenSize(640, 640);
+  static constexpr gf::Vector2u ScreenSize(768, 800);
   gf::Window window("Petit jeu en réseau (client)", ScreenSize);
   window.setFramerateLimit(60);
   gf::RenderWindow renderer(window);
@@ -110,7 +110,12 @@ int main(int argc, char *argv[]) {
 
   Grid g(resources);
   g.createGrid();
+  g.setPosition({64, 32});
   entities.addEntity(g);
+
+  Selection s(resources);
+  s.setPosition({0, 704});
+  entities.addEntity(s);
 
   // Boucle de jeu
   renderer.clear(gf::Color::White);
@@ -124,11 +129,39 @@ int main(int argc, char *argv[]) {
       while(window.pollEvent(event)) {
         actions.processEvent(event);
 
-        if(event.type == gf::EventType::MouseMoved) {
-          std::cout << "Case : ( " << event.mouseCursor.coords.x / g.TileSize << " , " << event.mouseCursor.coords.y / g.TileSize << " )" << std::endl;
-          Piece p = g.getPiece({event.mouseCursor.coords.x / g.TileSize, event.mouseCursor.coords.y / g.TileSize});
+        if(event.type == gf::EventType::MouseButtonPressed) {
 
-          std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
+          // Récupération de la pièce dans le selecteur
+          gf::Vector2i c = s.getPieceCoordsFromMouse(event.mouseButton.coords);
+          // std::cout << "Case : ( " << c.x << " , " << c.y << " )" << std::endl;
+          if(c.x != -1 && c.y != -1) {
+            Piece p = s.getPiece({(unsigned)c.x, (unsigned)c.y});
+            std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
+            // On sélectionne la pièce voulue
+            s.selectPiece((unsigned int)p.rank);
+          }
+
+          // Récupération de la case de la grille
+          c = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+          if(c.x != -1 && c.y != -1) {
+            // Vérification qu'une pièce est selectionné dans le sélecteur
+            if(s.selected != -1) {
+              // On peut alors regarder la case cliquée
+              Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
+              std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
+
+              Piece newPiece;
+              newPiece.rank = Rank(s.selected);
+              newPiece.side = Side::Red;
+
+              if(g.setPiece(c, newPiece)) {
+                s.selected = -1;
+                s.getPiece((unsigned int)p.rank);
+              } else {
+                std::cout << "Erreur" << std::endl;
+              }
+            }
+          }
         }
       }
 
@@ -138,12 +171,13 @@ int main(int argc, char *argv[]) {
 
       // Update
       gf::Time time = clock.restart();
+      g.update(time);
+      // entities.update(time);
 
       // Draw
       renderer.clear();
       entities.render(renderer);
 
-      // Récupération de la dernière coordonnée de la file
       renderer.display();
   }
 

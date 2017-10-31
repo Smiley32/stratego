@@ -1,5 +1,7 @@
 #include "c_grid.h"
 
+#include <iostream>
+
 Grid::Grid(gf::ResourceManager& resources)
 : m_layer({GridSize, GridSize})
 {
@@ -25,6 +27,10 @@ Grid::Grid(gf::ResourceManager& resources)
   grid[4][7].rank = Rank::Water;
   grid[5][6].rank = Rank::Water;
   grid[5][7].rank = Rank::Water;
+
+  grid[1][3].rank = Rank::Marshal;
+  grid[1][4].rank = Rank::Flag;
+  grid[2][5].rank = Rank::Captain;
 }
 
 void Grid::createGrid() {
@@ -38,71 +44,77 @@ void Grid::createGrid() {
   }
 }
 
+void Grid::setPosition(gf::Vector2f origin) {
+  m_layer.setPosition(origin);
+}
+
+gf::Vector2f Grid::getPosition() {
+  return m_layer.getPosition();
+}
+
+gf::Vector2i Grid::getPieceCoordsFromMouse(gf::Vector2f coords) {
+  if(coords.x < getPosition().x || coords.y < getPosition().y || coords.x > getPosition().x + (GridSize * TileSize) || coords.y > getPosition().y + (GridSize * TileSize)) {
+    return {-1, -1};
+  }
+
+  return {(int)((coords.x - getPosition().x) / TileSize), (int)((coords.y - getPosition().y) / TileSize)};
+}
+
 Piece Grid::getPiece(gf::Vector2u coords) {
   int tile = m_layer.getTile(coords);
   Piece p;
-  switch(tile) {
-    case 0:
-      p.side = Side::Blue;
-      p.rank = Rank::Bomb;
-      break;
-    case 1:
-      p.side = Side::Blue;
-      p.rank = Rank::Marshal;
-      break;
-    case 2:
-      p.side = Side::Blue;
-      p.rank = Rank::General;
-      break;
-    case 3:
-      p.side = Side::Blue;
-      p.rank = Rank::Colonel;
-      break;
-    case 4:
-      p.side = Side::Blue;
-      p.rank = Rank::Major;
-      break;
-    case 5:
-      p.side = Side::Blue;
-      p.rank = Rank::Captain;
-      break;
-    case 6:
-      p.side = Side::Blue;
-      p.rank = Rank::Lieutenant;
-      break;
-    case 7:
-      p.side = Side::Blue;
-      p.rank = Rank::Sergeant;
-      break;
-    case 8:
-      p.side = Side::Blue;
-      p.rank = Rank::Miner;
-      break;
-    case 9:
-      p.side = Side::Blue;
-      p.rank = Rank::Scout;
-      break;
-    case 10:
-      p.side = Side::Blue;
-      p.rank = Rank::Spy;
-      break;
-    case 11:
-      p.side = Side::Blue;
-      p.rank = Rank::Flag;
-      break;
-    case 12:
-      p.side = Side::Other;
-      p.rank = Rank::Water;
-      break;
-    default:
-      p.side = Side::Other;
-      p.rank = Rank::Empty;
-      break;
+  if(tile >= 12) {
+    p.side = Side::Other;
+  } else {
+    p.side = Side::Red;
   }
+  p.rank = (Rank)tile;
 
   return p;
 }
 
+bool Grid::setPiece(gf::Vector2u coords, Piece p) {
+  if(grid[coords.x][coords.y].rank == Rank::Empty) {
+    grid[coords.x][coords.y].rank = p.rank;
+    grid[coords.x][coords.y].side = p.side;
+    modif = true;
+    std::cout << "..." << coords.x << "," << coords.y << " ; " << (int)grid[coords.x][coords.y].rank << std::endl;
+    return true;
+  }
+  return false;
+}
+
 void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
-  target.draw(m_layer);
+  // std::cout << "Dessin..." << std::endl;
+  // target.draw(m_layer, states);
+
+  gf::Texture texture;
+  texture.loadFromFile("pieces.png");
+
+  for(unsigned x = 0; x < GridSize; x++) {
+    for(unsigned y = 0; y < GridSize; y++) {
+      gf::Vector2u coords(x, 0);
+      int r = (int)grid[x][y].rank;
+
+      gf::Sprite sprite(texture, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+      sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y + (y * TileSize)});
+      target.draw(sprite, states);
+    }
+  }
+}
+
+void Grid::update(gf::Time time) {
+  if(modif) {
+    std::cout << "update" << std::endl;
+    modif = false;
+
+    m_layer.clear();
+    for(unsigned x = 0; x < GridSize; x++) {
+      for(unsigned y = 0; y < GridSize; y++) {
+        gf::Vector2u coords(x, y);
+        m_layer.setTile(coords, static_cast<int>(grid[x][y].rank));
+        std::cout << "[" << coords.x << ", " << coords.y << "] - " << m_layer.getTile(coords) << std::endl;
+      }
+    }
+  }
 }
