@@ -55,16 +55,7 @@ gf::Vector2i Grid::getPieceCoordsFromMouse(gf::Vector2f coords) {
 }
 
 Piece Grid::getPiece(gf::Vector2u coords) {
-  int tile = m_layer.getTile(coords);
-  Piece p;
-  if(tile >= 12) {
-    p.side = Side::Other;
-  } else {
-    p.side = Side::Red;
-  }
-  p.rank = (Rank)tile;
-
-  return p;
+  return grid[coords.x][coords.y];
 }
 
 void Grid::removePiece(gf::Vector2u coords) {
@@ -86,6 +77,19 @@ bool Grid::setPiece(gf::Vector2u coords, Piece p) {
 void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   // std::cout << "Dessin..." << std::endl;
   // target.draw(m_layer, states);
+
+  // Tracé de la grille
+  for(unsigned x = 0; x <= GridSize; x++) {
+    // Tracé des colonnes
+    gf::Line colonne({getPosition().x + (x * TileSize), getPosition().y}, {getPosition().x + (x * TileSize), getPosition().y + (GridSize * TileSize)});
+    colonne.setColor(gf::Color::Black);
+    target.draw(colonne, states);
+
+    // Tracé des lignes
+    gf::Line line({getPosition().x, getPosition().y + (x * TileSize)}, {getPosition().x + (GridSize * TileSize), getPosition().y + (x * TileSize)});
+    line.setColor(gf::Color::Black);
+    target.draw(line, states);
+  }
 
   gf::Texture texture;
   texture.loadFromFile("pieces.png");

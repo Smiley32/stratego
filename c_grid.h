@@ -4,6 +4,9 @@
 #include <gf/Entity.h>
 #include <gf/TileLayer.h>
 #include <gf/RenderTarget.h>
+#include <gf/Curves.h>
+#include <gf/Color.h>
+
 #include "c_piece.h"
 
 class Grid : public gf::Entity {
