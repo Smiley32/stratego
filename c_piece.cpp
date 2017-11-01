@@ -1,5 +1,7 @@
 #include "c_piece.h"
 
+#include <iostream>
+
 Selection::Selection(gf::ResourceManager& resources)
 : m_layer({NbPieces, 1})
 {
@@ -50,14 +52,20 @@ gf::Vector2i Selection::getPieceCoordsFromMouse(gf::Vector2f coords) {
 void Selection::selectPiece(unsigned int pieceNumber) {
   if(pieceNumber < NbPieces && nbPieces[pieceNumber] > 0) {
     selected = pieceNumber;
-    grid[selected].rank = Rank::Empty;
+    // grid[selected].rank = Rank::Empty;
+    std::cout << "Selected : " << nbPieces[pieceNumber] << std::endl;
   } else {
     selected = -1;
   }
 }
 
-void Selection::getPiece(unsigned int pieceNumber) {
+void Selection::takeOnePiece(unsigned int pieceNumber) {
   nbPieces[pieceNumber]--;
+  std::cout << "nbPieces restantes : " << nbPieces[pieceNumber] << std::endl;
+}
+
+void Selection::addPiece(Piece p) {
+  nbPieces[(int)p.rank]++;
 }
 
 void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states) {
@@ -65,13 +73,28 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
   gf::Texture texture;
   texture.loadFromFile("pieces.png");
 
+  gf::Font font;
+  font.loadFromFile("16_DejaVuSans.ttf");
+
   for(unsigned x = 0; x < NbPieces; x++) {
     gf::Vector2u coords(x, 0);
     int r = (int)grid[x].rank;
 
+    // On affiche des cases vides si la pièce n'est plus dispo
+    if(nbPieces[x] == 0) {
+      r = (int)Rank::Empty;
+    }
+
     gf::Sprite sprite(texture, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
     sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y});
     target.draw(sprite, states);
+
+    // Affichage du nombre de pièces restantes
+    gf::Text txt(std::to_string(nbPieces[x]), font);
+    txt.setCharacterSize(20);
+    txt.setPosition({getPosition().x + (x * TileSize) + 20, getPosition().y + TileSize + 20});
+    target.draw(txt, states);
+
     // m_layer.setTile(coords, static_cast<int>(grid[x].rank));
   }
 

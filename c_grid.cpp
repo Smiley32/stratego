@@ -16,21 +16,15 @@ Grid::Grid(gf::ResourceManager& resources)
     }
   }
 
-  grid[3][8].side = Side::Blue;
-  grid[3][8].rank = Rank::Bomb;
-  grid[4][2].rank = Rank::Water;
-  grid[4][3].rank = Rank::Water;
-  grid[5][2].rank = Rank::Water;
-  grid[5][3].rank = Rank::Water;
+  grid[2][4].rank = Rank::Water;
+  grid[3][4].rank = Rank::Water;
+  grid[2][5].rank = Rank::Water;
+  grid[3][5].rank = Rank::Water;
 
-  grid[4][6].rank = Rank::Water;
-  grid[4][7].rank = Rank::Water;
-  grid[5][6].rank = Rank::Water;
-  grid[5][7].rank = Rank::Water;
-
-  grid[1][3].rank = Rank::Marshal;
-  grid[1][4].rank = Rank::Flag;
-  grid[2][5].rank = Rank::Captain;
+  grid[6][4].rank = Rank::Water;
+  grid[6][5].rank = Rank::Water;
+  grid[7][4].rank = Rank::Water;
+  grid[7][5].rank = Rank::Water;
 }
 
 void Grid::createGrid() {
@@ -73,8 +67,13 @@ Piece Grid::getPiece(gf::Vector2u coords) {
   return p;
 }
 
+void Grid::removePiece(gf::Vector2u coords) {
+  grid[coords.x][coords.y].side = Side::Other;
+  grid[coords.x][coords.y].rank = Rank::Empty;
+}
+
 bool Grid::setPiece(gf::Vector2u coords, Piece p) {
-  if(grid[coords.x][coords.y].rank == Rank::Empty) {
+  if(grid[coords.x][coords.y].rank == Rank::Empty && coords.y >= 6) {
     grid[coords.x][coords.y].rank = p.rank;
     grid[coords.x][coords.y].side = p.side;
     modif = true;
@@ -113,7 +112,7 @@ void Grid::update(gf::Time time) {
       for(unsigned y = 0; y < GridSize; y++) {
         gf::Vector2u coords(x, y);
         m_layer.setTile(coords, static_cast<int>(grid[x][y].rank));
-        std::cout << "[" << coords.x << ", " << coords.y << "] - " << m_layer.getTile(coords) << std::endl;
+        // std::cout << "[" << coords.x << ", " << coords.y << "] - " << m_layer.getTile(coords) << std::endl;
       }
     }
   }

@@ -9,6 +9,9 @@
 #include <gf/Sprite.h>
 #include <gf/VectorOps.h>
 #include <gf/Transform.h>
+#include <gf/Text.h>
+
+#include <string>
 
 /**
  * Camp de la piece : Other pour les éléments neutres (lac / case vide)
@@ -78,7 +81,9 @@ public:
   Piece getPiece(gf::Vector2u coords);
 
   void selectPiece(unsigned int pieceNumber);
-  void getPiece(unsigned int pieceNumber);
+  void takeOnePiece(unsigned int pieceNumber);
+
+  void addPiece(Piece p);
 
 private:
   gf::TileLayer m_layer;

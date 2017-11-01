@@ -8,6 +8,7 @@
 #include <gf/Queue.h>
 #include <gf/Action.h>
 #include <gf/EntityContainer.h>
+#include <gf/UI.h>
 
 #include <gf/Sleep.h>
 #include <gf/Time.h>
@@ -99,8 +100,11 @@ int main(int argc, char *argv[]) {
 
   gf::Action closeWindowAction("Close window");
   closeWindowAction.addCloseControl();
-  closeWindowAction.addKeycodeKeyControl(gf::Keycode::Escape);
   actions.addAction(closeWindowAction);
+
+  gf::Action escAction("Echap");
+  escAction.addKeycodeKeyControl(gf::Keycode::Escape);
+  actions.addAction(escAction);
 
   // Resource manager
   gf::ResourceManager resources;
@@ -122,6 +126,18 @@ int main(int argc, char *argv[]) {
 
   gf::Clock clock;
 
+  gf::Font font;
+  bool loaded = font.loadFromFile("16_DejaVuSans.ttf");
+  if(!loaded) {
+    std::cout << "Impossible de charger la police" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  gf::UI ui(font);
+
+  bool displayEscUi = false;
+  bool escPressed = false;
+
   while(window.isOpen()) {
       gf::Event event;
 
@@ -131,42 +147,75 @@ int main(int argc, char *argv[]) {
 
         if(event.type == gf::EventType::MouseButtonPressed) {
 
-          // Récupération de la pièce dans le selecteur
-          gf::Vector2i c = s.getPieceCoordsFromMouse(event.mouseButton.coords);
-          // std::cout << "Case : ( " << c.x << " , " << c.y << " )" << std::endl;
-          if(c.x != -1 && c.y != -1) {
-            Piece p = s.getPiece({(unsigned)c.x, (unsigned)c.y});
-            std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
-            // On sélectionne la pièce voulue
-            s.selectPiece((unsigned int)p.rank);
-          }
-
-          // Récupération de la case de la grille
-          c = g.getPieceCoordsFromMouse(event.mouseButton.coords);
-          if(c.x != -1 && c.y != -1) {
-            // Vérification qu'une pièce est selectionné dans le sélecteur
-            if(s.selected != -1) {
-              // On peut alors regarder la case cliquée
-              Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
+          // Clic gauche : choisir une pièce
+          if(event.mouseButton.button == gf::MouseButton::Left) {
+            // Récupération de la pièce dans le selecteur
+            gf::Vector2i c = s.getPieceCoordsFromMouse(event.mouseButton.coords);
+            // std::cout << "Case : ( " << c.x << " , " << c.y << " )" << std::endl;
+            if(c.x != -1 && c.y != -1) {
+              Piece p = s.getPiece({(unsigned)c.x, (unsigned)c.y});
               std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
+              // On sélectionne la pièce voulue
+              s.selectPiece((unsigned int)p.rank);
+            }
 
-              Piece newPiece;
-              newPiece.rank = Rank(s.selected);
-              newPiece.side = Side::Red;
+            // Récupération de la case de la grille
+            c = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+            if(c.x != -1 && c.y != -1) {
+              // Vérification qu'une pièce est selectionné dans le sélecteur
+              if(s.selected != -1) {
+                // On peut alors regarder la case cliquée
+                Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
+                std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
 
-              if(g.setPiece(c, newPiece)) {
-                s.selected = -1;
-                s.getPiece((unsigned int)p.rank);
-              } else {
-                std::cout << "Erreur" << std::endl;
+                Piece newPiece;
+                newPiece.rank = Rank(s.selected);
+                newPiece.side = Side::Red;
+
+                if(g.setPiece(c, newPiece)) {
+                  s.takeOnePiece(s.selected);
+                  s.selected = -1;
+                } else {
+                  std::cout << "Erreur" << std::endl;
+                }
               }
             }
           }
+
+          // Clic droit : supprimer une pièce de la grille
+          if(event.mouseButton.button == gf::MouseButton::Right) {
+            // Récupération de la case de la grille
+            gf::Vector2i c = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+            if(c.x != -1 && c.y != -1) {
+              // On retire la pièce de la grille
+              Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
+
+              if(p.rank != Rank::Empty && p.rank != Rank::Water) {
+                // On peut supprimer la pièce de la grille
+                g.removePiece({(unsigned)c.x, (unsigned)c.y});
+
+                // On ajoute maintenant cette pièce au selecteur
+                s.addPiece(p);
+              }
+            }
+          }
+          
         }
+
+        ui.processEvent(event);
       }
 
       if(closeWindowAction.isActive()) {
         window.close();
+      }
+
+      if(escAction.isActive()) {
+        if(!escPressed) {
+          displayEscUi = !displayEscUi;
+        }
+        escPressed = true;
+      } else {
+        escPressed = false;
       }
 
       // Update
@@ -177,6 +226,23 @@ int main(int argc, char *argv[]) {
       // Draw
       renderer.clear();
       entities.render(renderer);
+
+      // UI
+      if(displayEscUi) {
+        // Afficher la fenêtre d'UI
+        if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Movable | gf::UIWindow::Scalable | gf::UIWindow::Closable | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+
+          ui.layoutRowStatic(30, 80, 1);
+
+          if(ui.buttonLabel("Quitter")) {
+            window.close();
+          }
+        }
+
+        ui.end();
+
+        renderer.draw(ui);
+      }
 
       renderer.display();
   }

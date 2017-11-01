@@ -25,6 +25,8 @@ public:
 
   bool setPiece(gf::Vector2u coords, Piece p);
 
+  void removePiece(gf::Vector2u coords);
+
 private:
   static constexpr unsigned GridSize = 10;
   gf::TileLayer m_layer;
