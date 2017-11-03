@@ -7,40 +7,118 @@
 
 using boost::asio::ip::tcp;
 
-bool s_grid::checkMovement(s_piece target, int x, int y)
+s_grid::create_empty_grid()
 {
-  // Vérification coordonnées cibles dans l'espace de jeu
-  if (x < 0 || y < 0 || x > 9 || y > 9)
+  is_started = false;
+
+  for(size_t x = 0; x < size; x++)
   {
+    for(size_t y = 0; y < size; y++)
+    {
+      grid[x][y].side = Side::Other;
+      grid[x][y].rank = Rank::Empty;
+    }
+  }
+
+  grid[2][4].rank = Rank::Water;
+  grid[3][4].rank = Rank::Water;
+  grid[2][5].rank = Rank::Water;
+  grid[3][5].rank = Rank::Water;
+
+  grid[6][4].rank = Rank::Water;
+  grid[6][5].rank = Rank::Water;
+  grid[7][4].rank = Rank::Water;
+  grid[7][5].rank = Rank::Water;
+}
+
+
+bool create_piece(gf::Vector2u coo2D, Piece p)
+{
+  // Vérification jeu non lancé
+  if (is_started)
+  {
+    fprintf("Error create_piece: game already started\n");
     return false;
   }
 
-  // Si on essaye de déplacer une bombe ou un drapeau
-  if (abs(value) == 11 || abs(value) == 12)
+  // Vérification pièce du bon côté
+  if ( (p.side == Side::Blue && coo2D.y < 6) || (p.side == Side::Red && coo2D.y > 3) )
   {
+    fprintf(stderr, "Error create_piece: Wrong side for Piece %d (%s Team): Tried %d %d\n", p.rank, p.side, coo2D.x, Coo2D.y);
     return false;
   }
 
-  // Vérification mouvement spécial éclaireur
-  if (abs(value) == 8)
+  // Vérication case libre
+  if (grid[coo2D.x][coo2D.y].rank != Rank::Empty)
   {
-      if ((abs(target.getPosX() - x) > 1 && abs(target.getPosY() - y) == 0) || (abs(target.getPosY() - y) > 1 && (abs(target.getPosX() - x) == 0))
+    fprintf(stderr, "Error create_piece: %d %d is not free", coo2D.x, coo2D.y);
+    return false;
+  }
+
+  grid[coo2D.x][coo2D.y].rank = p.rank;
+  grid[coo2D.x][coo2D.y].side = p.side;
+
+  return true;
+}
+
+bool start_game()
+{
+  int blue_team[12];
+  int red_team[12];
+
+  blue_team[0] = red_team[0] = 6;
+  blue_team[1] = red_team[1] = 1;
+  blue_team[2] = red_team[2] = 1;
+  blue_team[3] = red_team[3] = 2;
+  blue_team[4] = red_team[4] = 3;
+  blue_team[5] = red_team[5] = 4;
+  blue_team[6] = red_team[6] = 4;
+  blue_team[7] = red_team[7] = 4;
+  blue_team[8] = red_team[8] = 5;
+  blue_team[9] = red_team[9] = 8;
+  blue_team[10] = red_team[10] = 1;
+  blue_team[11] = red_team[11] = 1;
+
+  // Comptage côté rouge
+  for (size_t x = 0; x < size; x++)
+  {
+    for (size_t y = 0; y < 4; y++)
+    {
+      if (grid[x][y].rank == Rank::Empty)
       {
-        return true;
+        fprintf(stderr, "Error start_game: %zu %zu Empty", x, y);
+        return false;
       }
 
-      return false;
+      red_team[grid[x][y].rank]--;
+    }
   }
-  else
+
+  // Comptage côté bleu
+  for (size_t x = 0; x < size; x++)
   {
-    // Vérification le déplacement n'est pas plus de 1
-    if ((abs(target.getPosX() - x) == 1 && abs(target.getPosY() - y) == 0) || (abs(target.getPosY() - y) == 1 && (abs(target.getPosX() - x) == 0))
+    for (size_t y = 6; y < size; y++)
     {
+      if (grid[x][y].rank == Rank::Empty)
+      {
+        fprintf(stderr, "Error start_game: %zu %zu Empty", x, y);
+        return false;
+      }
+
+      blue_team[grid[x][y].rank]--;
+    }
+  }
+
+  // On vérifie qu'il n'y ai pas d'anomalie dans le comptage de piece
+  for (size_t i = 0; i < 12; i++)
+  {
+    if (red_team[i] != 0 || blue_team[i] != 0)
+    {
+      fprintf(stderr, "Error start_game: Wrong number of pieces %zu", i);
       return false;
     }
   }
 
-  //TODO Vérification case libre
-
-  return true;
+  is_started = true;
+  return is_started;
 }

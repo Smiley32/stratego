@@ -8,16 +8,16 @@ class s_grid
 
   public:
 
-    bool checkMovement(s_piece target, int x, int y);
+    void create_empty_grid();
+    bool start_game();
 
   private:
 
-    /*
-     *  Ici les équipes sont gérées par négatif.
-     *  Il y a une équipe en positif, et l'autre en
-     *  négatif
-     */
-    s_piece *grid[10][10];
+    Piece grid[10][10];
+    size_t size;
+    bool is_started;
+
+    bool create_piece(gf::Vector2u coo2D, Piece p);
 };
 
 #endif
