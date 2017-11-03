@@ -7,7 +7,7 @@
 
 using boost::asio::ip::tcp;
 
-s_grid::create_empty_grid()
+void s_grid::create_empty_grid()
 {
   is_started = false;
 
@@ -37,7 +37,13 @@ bool create_piece(gf::Vector2u coo2D, Piece p)
   // Vérification jeu non lancé
   if (is_started)
   {
-    fprintf("Error create_piece: game already started\n");
+    fprintf(stderr, "Error create_piece: game already started\n");
+    return false;
+  }
+
+  if (coo2D.x > size || cooD.y > size || coo2D.x < 0 || coo2D.y < 0)
+  {
+    fprintf(stderr, "Error create_piece: Invalid coords %d %d\n", coo2D.x, coo2D.y);
     return false;
   }
 
@@ -121,4 +127,29 @@ bool start_game()
 
   is_started = true;
   return is_started;
+}
+
+bool move_piece(gf::Vector2u source, gf::Vector2u dest)
+{
+  // Vérifications coordonnées dans la carte
+  if (source.x < 0 || source.y < 0 || source.x > size || source.y > size)
+  {
+    fprintf(stderr, "Error move_piece: Invalid coord for source %d %d\n", source.x, source.y);
+    return false;
+  }
+
+  if (dest.x < 0 || dest.y < 0 || dest.x > size || dest.y > size)
+  {
+    fprintf(stderr, "Error move_piece: Invalid coord for dest %d %d\n", dest.x, dest.y);
+    return false;
+  }
+
+  // Vérification piece a le droit de bouger
+  if (grid[source.x][source.y].rank > 10 || grid[source.x][source.y].rank == 0)
+  {
+    fprintf(stderr, "Error move_piece: This piece can't move\n");
+    return false;
+  }
+
+  // TODO Colisions de pièces
 }

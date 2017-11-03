@@ -2,6 +2,11 @@
 #define SGRID_H
 
 #include "s_piece.h"
+#include <gf/Entity.h>
+#include <gf/TileLayer.h>
+#include <gf/RenderTarget.h>
+#include <gf/Curves.h>
+#include <gf/Color.h>
 
 class s_grid
 {
@@ -10,6 +15,7 @@ class s_grid
 
     void create_empty_grid();
     bool start_game();
+    bool move_piece(gf::Vector2u source, gf::Vector2u dest);
 
   private:
 
