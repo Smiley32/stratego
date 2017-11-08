@@ -22,6 +22,8 @@ class s_grid
     Piece grid[10][10];
     size_t size;
     bool is_started;
+    int b_pieces[12];
+    int r_pieces[12];
 
     bool create_piece(gf::Vector2u coo2D, Piece p);
 };

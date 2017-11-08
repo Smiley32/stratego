@@ -29,10 +29,23 @@ void s_grid::create_empty_grid()
   grid[6][5].rank = Rank::Water;
   grid[7][4].rank = Rank::Water;
   grid[7][5].rank = Rank::Water;
+
+  b_pieces[0] = r_pieces[0] = 6;
+  b_pieces[1] = r_pieces[1] = 1;
+  b_pieces[2] = r_pieces[2] = 1;
+  b_pieces[3] = r_pieces[3] = 2;
+  b_pieces[4] = r_pieces[4] = 3;
+  b_pieces[5] = r_pieces[5] = 4;
+  b_pieces[6] = r_pieces[6] = 4;
+  b_pieces[7] = r_pieces[7] = 4;
+  b_pieces[8] = r_pieces[8] = 5;
+  b_pieces[9] = r_pieces[9] = 8;
+  b_pieces[10] = r_pieces[10] = 1;
+  b_pieces[11] = r_pieces[11] = 1;
 }
 
 
-bool create_piece(gf::Vector2u coo2D, Piece p)
+bool s_grid::create_piece(gf::Vector2u coo2D, Piece p)
 {
   // Vérification jeu non lancé
   if (is_started)
@@ -41,7 +54,7 @@ bool create_piece(gf::Vector2u coo2D, Piece p)
     return false;
   }
 
-  if (coo2D.x > size || cooD.y > size || coo2D.x < 0 || coo2D.y < 0)
+  if (coo2D.x > size || coo2D.y > size || coo2D.x < 0 || coo2D.y < 0)
   {
     fprintf(stderr, "Error create_piece: Invalid coords %d %d\n", coo2D.x, coo2D.y);
     return false;
@@ -50,7 +63,7 @@ bool create_piece(gf::Vector2u coo2D, Piece p)
   // Vérification pièce du bon côté
   if ( (p.side == Side::Blue && coo2D.y < 6) || (p.side == Side::Red && coo2D.y > 3) )
   {
-    fprintf(stderr, "Error create_piece: Wrong side for Piece %d (%s Team): Tried %d %d\n", p.rank, p.side, coo2D.x, Coo2D.y);
+    fprintf(stderr, "Error create_piece: Wrong side for Piece %d (%s Team): Tried %d %d\n", (int) p.rank, (char *) p.side, coo2D.x, coo2D.y);
     return false;
   }
 
@@ -61,64 +74,35 @@ bool create_piece(gf::Vector2u coo2D, Piece p)
     return false;
   }
 
+  if (p.side == Side::Blue)
+  {
+    if (b_pieces[(int) p.rank] <= 0)
+    {
+      return false;
+    }
+    b_pieces[(int) p.rank]--;
+  }
+  else
+  {
+    if (r_pieces[(int) p.rank] <= 0)
+    {
+      return false;
+    }
+    r_pieces[(int) p.rank]--;
+  }
   grid[coo2D.x][coo2D.y].rank = p.rank;
   grid[coo2D.x][coo2D.y].side = p.side;
 
   return true;
 }
 
-bool start_game()
+bool s_grid::start_game()
 {
-  int blue_team[12];
-  int red_team[12];
-
-  blue_team[0] = red_team[0] = 6;
-  blue_team[1] = red_team[1] = 1;
-  blue_team[2] = red_team[2] = 1;
-  blue_team[3] = red_team[3] = 2;
-  blue_team[4] = red_team[4] = 3;
-  blue_team[5] = red_team[5] = 4;
-  blue_team[6] = red_team[6] = 4;
-  blue_team[7] = red_team[7] = 4;
-  blue_team[8] = red_team[8] = 5;
-  blue_team[9] = red_team[9] = 8;
-  blue_team[10] = red_team[10] = 1;
-  blue_team[11] = red_team[11] = 1;
-
-  // Comptage côté rouge
-  for (size_t x = 0; x < size; x++)
-  {
-    for (size_t y = 0; y < 4; y++)
-    {
-      if (grid[x][y].rank == Rank::Empty)
-      {
-        fprintf(stderr, "Error start_game: %zu %zu Empty", x, y);
-        return false;
-      }
-
-      red_team[grid[x][y].rank]--;
-    }
-  }
-
-  // Comptage côté bleu
-  for (size_t x = 0; x < size; x++)
-  {
-    for (size_t y = 6; y < size; y++)
-    {
-      if (grid[x][y].rank == Rank::Empty)
-      {
-        fprintf(stderr, "Error start_game: %zu %zu Empty", x, y);
-        return false;
-      }
-
-      blue_team[grid[x][y].rank]--;
-    }
-  }
 
   // On vérifie qu'il n'y ai pas d'anomalie dans le comptage de piece
   for (size_t i = 0; i < 12; i++)
   {
-    if (red_team[i] != 0 || blue_team[i] != 0)
+    if (r_pieces[i] != 0 || b_pieces[i] != 0)
     {
       fprintf(stderr, "Error start_game: Wrong number of pieces %zu", i);
       return false;
@@ -129,7 +113,7 @@ bool start_game()
   return is_started;
 }
 
-bool move_piece(gf::Vector2u source, gf::Vector2u dest)
+bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
 {
   // Vérifications coordonnées dans la carte
   if (source.x < 0 || source.y < 0 || source.x > size || source.y > size)
@@ -145,7 +129,7 @@ bool move_piece(gf::Vector2u source, gf::Vector2u dest)
   }
 
   // Vérification piece a le droit de bouger
-  if (grid[source.x][source.y].rank > 10 || grid[source.x][source.y].rank == 0)
+  if ((int) grid[source.x][source.y].rank > 10 || (int) grid[source.x][source.y].rank == 0)
   {
     fprintf(stderr, "Error move_piece: This piece can't move\n");
     return false;
