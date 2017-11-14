@@ -42,21 +42,21 @@ std::string get_message(tcp::socket *socket) {
 }
 
 // Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
-void reception_thread(std::string msg) {
+void reception_thread(char *ip, char *port) {
   // Affichage du paramètre
-  std::cout << msg << std::endl;
+  // td::cout << msg << std::endl;
 
   try {
     boost::asio::io_service io_service;
     tcp::resolver resolver(io_service);
 
-    std::string ip;
+    /*std::string ip;
     std::cout << "Entrez l'ip du serveur :" << std::endl;
     std::cin >> ip;
 
     std::string port;
     std::cout << "Entrez le port du serveur :" << std::endl;
-    std::cin >> port;
+    std::cin >> port;*/
 
     tcp::resolver::query query(ip, port);
 
@@ -85,10 +85,6 @@ void reception_thread(std::string msg) {
 }
 
 int main(int argc, char *argv[]) {
-
-  std::thread rt(reception_thread, "Bonjour, je suis le thread de réception !");
-  rt.detach();
-
   // Initialisation
   static constexpr gf::Vector2u ScreenSize(768, 800);
   gf::Window window("Petit jeu en réseau (client)", ScreenSize);
@@ -135,17 +131,15 @@ int main(int argc, char *argv[]) {
 
   gf::UI ui(font);
 
-  char servIp[16];
-  std::size_t servIpLength[1];
-  char servPort[6];
-  std::size_t servPortLength;
+  static char servIp[16];
+  static std::size_t servIpLength;
+  static char servPort[6];
+  static std::size_t servPortLength;
 
   bool displayEscUi = false;
   bool escPressed = false;
 
   // Première boucle : sélection du serveur
-  if(false) {
-
   bool servSelected = false;
   while(!servSelected) {
     gf::Event event;
@@ -156,6 +150,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(closeWindowAction.isActive()) {
+      servSelected = true;
       window.close();
     }
 
@@ -177,48 +172,49 @@ int main(int argc, char *argv[]) {
     // UI
     if(displayEscUi) {
       // Afficher la fenêtre d'UI
-
-      if(ui.popupBegin(gf::UIPopup::Static, "Menu", gf::None, gf::RectF(20.0f, 100.0f, 220.0f, 90.0f))) {
+      if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
         ui.layoutRowDynamic(25, 1);
-        ui.label("A terrible error has occurred");
-        /*if(ui.buttonLabel("Quitter")) {
+
+        if(ui.buttonLabel("Quitter")) {
           servSelected = true;
           window.close();
-        }*/
-        ui.popupEnd();
-      } else {
-        displayEscUi = false;
+        }
       }
 
       ui.end();
-
-      renderer.draw(ui);
     }
 
     // Fenetre de selection du serveur
     // Afficher la fenêtre d'UI
-    /*if(ui.begin("Serveur", gf::RectF(300, 50, 400, 600), gf::UIWindow::Border | gf::UIWindow::Movable | gf::UIWindow::Scalable | gf::UIWindow::Closable | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+    if(ui.begin("Serveur", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
-      ui.layoutRowStatic(30, 80, 1);
+      ui.layoutRowDynamic(30, 1);
 
-      // ui.label("IP du serveur :");
-      // ui.edit(gf::UIEditType::Simple, servIp, servIpLength[0], gf::UIEditFilter::Default);
+      ui.label("IP du serveur :");
+      ui.edit(gf::UIEditType::Simple, servIp, servIpLength, gf::UIEditFilter::Default);
 
-      // ui.label("Port du serveur :");
-      //ui.edit(gf::UIEditType::Simple, servPort, &servPortLength, gf::UIEditFilter::Decimal);
+      ui.label("Port du serveur :");
+      ui.edit(gf::UIEditType::Simple, servPort, servPortLength, gf::UIEditFilter::Decimal);
 
       if(ui.buttonLabel("Confirmer")) {
-        window.close();
+        // TODO : vérification des données entrées
+
+        servSelected = true;
       }
     }
     ui.end();
-    renderer.draw(ui);*/
+
+    renderer.draw(ui);
 
     renderer.display();
   }
 
-}
+  std::cout << "serv ip : " << servIp << "port : " << servPort << std::endl;
+
+  // Création du thread qui va se connecter au serveur
+  std::thread rt(reception_thread, servIp, servPort);
+  rt.detach();
 
   displayEscUi = false;
   escPressed = false;
