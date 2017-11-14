@@ -4,12 +4,14 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
+#include "packet.h"
+
 using boost::asio::ip::tcp;
 
 int main(int argc, char *argv[])
 {
   boost::system::error_code error;
-  int tmp = 0;
+  int tmp = 65;
   bool tmp_b = true;
 
   try
@@ -38,17 +40,24 @@ int main(int argc, char *argv[])
     // Envoi du message d'acceptation au client
     boost::system::error_code ignored_error;
 
-    void *fullData = malloc(sizeof(int) + sizeof(bool));
+    /*void *fullData = malloc(sizeof(int) + sizeof(bool));
     memcpy(fullData, &tmp, sizeof(int));
-    memcpy(&fullData + sizeof(int), &tmp_b, sizeof(bool));
-    boost::asio::write(first_client, boost::asio::buffer(fullData, sizeof(fullData)), boost::asio::transfer_all(), ignored_error);
+    memcpy(&fullData + sizeof(int), &tmp_b, sizeof(bool));*/
+
+    Packet p;
+
+    p.append(&tmp, sizeof(tmp));
+    p.append(&tmp_b, sizeof(tmp_b));
+
+    boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+    std::cout << "fait" << std::endl;
 
     // Attente du second client
     tcp::socket second_client(io_service);
     acceptor.accept(second_client);
 
     // Envoi d'un message d'acceptation au client
-    boost::asio::write(second_client, boost::asio::buffer(fullData, sizeof(fullData)), boost::asio::transfer_all(), ignored_error);
+    // boost::asio::write(second_client, boost::asio::buffer(fullData, sizeof(fullData)), boost::asio::transfer_all(), ignored_error);
 
 
     // Commemencement boucle de lecture des pièces
