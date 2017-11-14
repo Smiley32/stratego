@@ -77,7 +77,7 @@ void reception_thread(std::string msg) {
     }
 
     // La connection est ouverte
-    std::cout << get_message(&socket) << std::endl;
+    std::cout << "'" << get_message(&socket) << "'" << std::endl;
 
   } catch(std::exception &e) {
     std::cerr << e.what() << std::endl;
@@ -86,8 +86,8 @@ void reception_thread(std::string msg) {
 
 int main(int argc, char *argv[]) {
 
-  // std::thread rt(reception_thread, "Bonjour, je suis le thread de réception !");
-  // rt.join();
+  std::thread rt(reception_thread, "Bonjour, je suis le thread de réception !");
+  rt.detach();
 
   // Initialisation
   static constexpr gf::Vector2u ScreenSize(768, 800);
@@ -135,8 +135,93 @@ int main(int argc, char *argv[]) {
 
   gf::UI ui(font);
 
+  char servIp[16];
+  std::size_t servIpLength[1];
+  char servPort[6];
+  std::size_t servPortLength;
+
   bool displayEscUi = false;
   bool escPressed = false;
+
+  // Première boucle : sélection du serveur
+  if(false) {
+
+  bool servSelected = false;
+  while(!servSelected) {
+    gf::Event event;
+
+    while(window.pollEvent(event)) {
+      actions.processEvent(event);
+      ui.processEvent(event);
+    }
+
+    if(closeWindowAction.isActive()) {
+      window.close();
+    }
+
+    if(escAction.isActive()) {
+      if(!escPressed) {
+        displayEscUi = !displayEscUi;
+      }
+      escPressed = true;
+    } else {
+      escPressed = false;
+    }
+
+    // Update
+    gf::Time time = clock.restart();
+
+    // Draw
+    renderer.clear();
+
+    // UI
+    if(displayEscUi) {
+      // Afficher la fenêtre d'UI
+
+      if(ui.popupBegin(gf::UIPopup::Static, "Menu", gf::None, gf::RectF(20.0f, 100.0f, 220.0f, 90.0f))) {
+
+        ui.layoutRowDynamic(25, 1);
+        ui.label("A terrible error has occurred");
+        /*if(ui.buttonLabel("Quitter")) {
+          servSelected = true;
+          window.close();
+        }*/
+        ui.popupEnd();
+      } else {
+        displayEscUi = false;
+      }
+
+      ui.end();
+
+      renderer.draw(ui);
+    }
+
+    // Fenetre de selection du serveur
+    // Afficher la fenêtre d'UI
+    /*if(ui.begin("Serveur", gf::RectF(300, 50, 400, 600), gf::UIWindow::Border | gf::UIWindow::Movable | gf::UIWindow::Scalable | gf::UIWindow::Closable | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+
+      ui.layoutRowStatic(30, 80, 1);
+
+      // ui.label("IP du serveur :");
+      // ui.edit(gf::UIEditType::Simple, servIp, servIpLength[0], gf::UIEditFilter::Default);
+
+      // ui.label("Port du serveur :");
+      //ui.edit(gf::UIEditType::Simple, servPort, &servPortLength, gf::UIEditFilter::Decimal);
+
+      if(ui.buttonLabel("Confirmer")) {
+        window.close();
+      }
+    }
+    ui.end();
+    renderer.draw(ui);*/
+
+    renderer.display();
+  }
+
+}
+
+  displayEscUi = false;
+  escPressed = false;
 
   while(window.isOpen()) {
       gf::Event event;
