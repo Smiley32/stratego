@@ -26,8 +26,11 @@
 
 using boost::asio::ip::tcp;
 
+tcp::socket *sock;
+gf::Queue<boost::array<char, 128>> messages;
+
 // Récupération d'un message du serveur
-std::string get_message(tcp::socket *socket) {
+boost::array<char, 128> get_message(tcp::socket *socket) {
   boost::array<char, 128> buf;
   boost::system::error_code error;
 
@@ -37,8 +40,38 @@ std::string get_message(tcp::socket *socket) {
     throw boost::system::system_error(error);
   }
 
-  std::string data(buf.begin(), buf.begin() + len);
-  return data;
+  // std::string data(buf.begin(), buf.begin() + len);
+  return buf;
+}
+
+int connection(char *ip, char *port) {
+  // try {
+    boost::asio::io_service io_service;
+    tcp::resolver resolver(io_service);
+
+    tcp::resolver::query query(ip, port);
+
+    tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+    tcp::resolver::iterator end;
+
+    // Création et connection du socket
+    // tcp::socket socket(io_service);
+    sock = new tcp::socket(io_service);
+    boost::system::error_code error = boost::asio::error::host_not_found;
+
+    while(error && endpoint_iterator != end) {
+      sock->close();
+      sock->connect(*endpoint_iterator++, error);
+    }
+
+    if(error) {
+      throw boost::system::system_error(error);
+    }
+
+    // C'est OK, la connection est correcte
+  /*} catch(std::exception &e) {
+    std::cerr << e.what() << std::endl;
+  }*/
 }
 
 // Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
@@ -46,17 +79,9 @@ void reception_thread(char *ip, char *port) {
   // Affichage du paramètre
   // td::cout << msg << std::endl;
 
-  try {
+  /*try {
     boost::asio::io_service io_service;
     tcp::resolver resolver(io_service);
-
-    /*std::string ip;
-    std::cout << "Entrez l'ip du serveur :" << std::endl;
-    std::cin >> ip;
-
-    std::string port;
-    std::cout << "Entrez le port du serveur :" << std::endl;
-    std::cin >> port;*/
 
     tcp::resolver::query query(ip, port);
 
@@ -74,14 +99,21 @@ void reception_thread(char *ip, char *port) {
 
     if(error) {
       throw boost::system::system_error(error);
-    }
+    }*/
 
     // La connection est ouverte
-    std::cout << "'" << get_message(&socket) << "'" << std::endl;
+    // std::cout << "'" << get_message(&socket) << "'" << std::endl;
 
+    while( true ) {
+      boost::array<char, 128> msg = get_message(sock);
+      std::cout << "Id du message : " << (int)msg[0] << std::endl;
+
+      messages.push(msg);
+    }
+/*
   } catch(std::exception &e) {
-    std::cerr << e.what() << std::endl;
-  }
+    std::cout << e.what() << std::endl;
+  }*/
 }
 
 int main(int argc, char *argv[]) {
@@ -138,6 +170,7 @@ int main(int argc, char *argv[]) {
 
   bool displayEscUi = false;
   bool escPressed = false;
+  bool error = false;
 
   // Première boucle : sélection du serveur
   bool servSelected = false;
@@ -199,8 +232,27 @@ int main(int argc, char *argv[]) {
 
       if(ui.buttonLabel("Confirmer")) {
         // TODO : vérification des données entrées
+        servIp[servIpLength] = '\0';
 
-        servSelected = true;
+        try {
+          connection(servIp, servPort);
+
+          // Création du thread qui va se connecter au serveur
+          std::thread rt(reception_thread, servIp, servPort);
+
+          rt.detach();
+
+          servSelected = true;
+
+        } catch(std::exception &e) {
+          std::cout << e.what() << std::endl;
+
+          error = true;
+        }
+      }
+
+      if(error) {
+        ui.label("Impossible de se connecter au serveur");
       }
     }
     ui.end();
@@ -210,11 +262,8 @@ int main(int argc, char *argv[]) {
     renderer.display();
   }
 
-  std::cout << "serv ip : " << servIp << "port : " << servPort << std::endl;
-
-  // Création du thread qui va se connecter au serveur
-  std::thread rt(reception_thread, servIp, servPort);
-  rt.detach();
+  servIp[servIpLength] = '\0';
+  std::cout << "serv ip : " << servIp << "(" << servIpLength << ")" << " port : " << servPort << std::endl;
 
   displayEscUi = false;
   escPressed = false;

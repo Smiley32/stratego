@@ -11,8 +11,6 @@ using boost::asio::ip::tcp;
 int main(int argc, char *argv[])
 {
   boost::system::error_code error;
-  int tmp = 65;
-  bool tmp_b = true;
 
   try
   {
@@ -45,9 +43,8 @@ int main(int argc, char *argv[])
     memcpy(&fullData + sizeof(int), &tmp_b, sizeof(bool));*/
 
     Packet p;
-
-    p.append(&tmp, sizeof(tmp));
-    p.append(&tmp_b, sizeof(tmp_b));
+    p.append(42);
+    p.append(65);
 
     boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
     std::cout << "fait" << std::endl;

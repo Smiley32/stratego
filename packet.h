@@ -9,7 +9,8 @@ public:
   Packet();
 
   // Ajout à la fin du packet
-  void append(const void* data, std::size_t dataSize);
+  // void append(const void* data, std::size_t dataSize);
+  void append(char data);
 
   // Vide le packet
   void clear();
