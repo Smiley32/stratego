@@ -85,11 +85,15 @@ public:
 
   void addPiece(Piece p);
 
+  void updateMouseCoords(gf::Vector2i coords);
+
 private:
   gf::TileLayer m_layer;
   // Nombre de chaque pièce restant à placer
   int nbPieces[NbPieces] = {6, 1, 1, 2, 3, 4, 4, 4, 5, 8, 1, 1};
   Piece grid[NbPieces];
+
+  gf::Vector2i mouseCoords;
 };
 
 #endif

@@ -68,6 +68,10 @@ void Selection::addPiece(Piece p) {
   nbPieces[(int)p.rank]++;
 }
 
+void Selection::updateMouseCoords(gf::Vector2i coords) {
+  mouseCoords = coords;
+}
+
 void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
   gf::Texture texture;
@@ -97,6 +101,15 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
 
     // m_layer.setTile(coords, static_cast<int>(grid[x].rank));
   }
+
+  // Affichage de la pièce selectionnée
+  if(selected != -1) {
+    gf::Sprite sprite(texture, gf::RectF( ((selected * TileSize) % 256) / 256.0, (((selected * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+    sprite.setPosition({mouseCoords.x - TileSize / 2, mouseCoords.y - TileSize / 2});
+
+    target.draw(sprite, states);
+  }
+
 
   // target.draw(m_layer);
 }

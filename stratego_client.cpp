@@ -275,6 +275,11 @@ int main(int argc, char *argv[]) {
       while(window.pollEvent(event)) {
         actions.processEvent(event);
 
+        if(event.type == gf::EventType::MouseMoved) {
+          std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
+          s.updateMouseCoords(event.mouseCursor.coords);
+        }
+
         if(event.type == gf::EventType::MouseButtonPressed) {
 
           // Clic gauche : choisir une pièce
@@ -308,6 +313,20 @@ int main(int argc, char *argv[]) {
                 } else {
                   std::cout << "Erreur" << std::endl;
                 }
+              } else { // Pas de pièce sélectionnée, on déplace la pièce qui était à cette case
+
+                // Suppression de la pièce
+                Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
+
+                if(p.rank != Rank::Empty && p.rank != Rank::Water) {
+                  // On peut supprimer la pièce de la grille
+                  g.removePiece({(unsigned)c.x, (unsigned)c.y});
+
+                  // On ajoute maintenant cette pièce au selecteur
+                  s.addPiece(p);
+                }
+
+                s.selectPiece((unsigned int)p.rank);
               }
             }
           }
