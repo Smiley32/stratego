@@ -113,6 +113,34 @@ bool s_grid::start_game()
   return is_started;
 }
 
+bool s_grid::red_t_ok()
+{
+  for (size_t i = 0; i < 12; i++)
+  {
+    if (r_pieces[i] != 0)
+    {
+      fprintf(stderr, "Error start_game: Wrong number of pieces %zu", i);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool s_grid::blue_t_ok()
+{
+  for (size_t i = 0; i < 12; i++)
+  {
+    if (b_pieces[i] != 0)
+    {
+      fprintf(stderr, "Error start_game: Wrong number of pieces %zu", i);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
 {
   // Vérifications coordonnées dans la carte

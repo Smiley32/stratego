@@ -8,6 +8,37 @@
 
 using boost::asio::ip::tcp;
 
+boost::array<char, 128> get_message(tcp::socket *socket)
+{
+  boost::array<char, 128> buf;
+  boost::system::error_code error;
+
+  size_t len = socket->read_some(boost::asio::buffer(buf), error);
+
+  if (error)
+  {
+    throw boost::system::system_error(error);
+  }
+
+  // std::string data(buf.begin(), buf.begin() + len);
+  return buf;
+}
+
+
+void get_vector_coord(gf::Vector2u *coo2D, int piece_pos, bool inversed)
+{
+  if (!inversed)
+  {
+    coo2D->x = 9 - (piece_pos % 10);
+    coo2D->y = 9 - piece_pos / 10;
+  }
+  else
+  {
+    coo2D->x = piece_pos % 10;
+    coo2D->y = piece_pos / 10;
+  }
+}
+
 int main(int argc, char *argv[])
 {
   boost::system::error_code error;
@@ -35,17 +66,13 @@ int main(int argc, char *argv[])
     tcp::socket first_client(io_service);
     acceptor.accept(first_client);
 
-    // Envoi du message d'acceptation au client
     boost::system::error_code ignored_error;
 
-    /*void *fullData = malloc(sizeof(int) + sizeof(bool));
-    memcpy(fullData, &tmp, sizeof(int));
-    memcpy(&fullData + sizeof(int), &tmp_b, sizeof(bool));*/
-
     Packet p;
-    p.append(42);
-    p.append(65);
+    p.append('0');
+    p.append('T');
 
+    // Envoi du message d'acceptation au client
     boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
     std::cout << "fait" << std::endl;
 
@@ -54,14 +81,18 @@ int main(int argc, char *argv[])
     acceptor.accept(second_client);
 
     // Envoi d'un message d'acceptation au client
-    // boost::asio::write(second_client, boost::asio::buffer(fullData, sizeof(fullData)), boost::asio::transfer_all(), ignored_error);
+    boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
 
-
+    p.clear();
     // Commemencement boucle de lecture des pièces
     boost::array<char, 128> buf;
     s_grid our_grid;
     int piece_pos;
     int piece_value;
+    bool r_rdy = false;
+    bool b_rdy = false;
+    Piece current_piece;
+    gf::Vector2u coo2D;
     size_t len;
 
     our_grid.create_empty_grid();
@@ -69,43 +100,99 @@ int main(int argc, char *argv[])
     // first_client == Blue
     // second_client == Red
 
-    for(;;)
+    // BOUCLE ACCEPTATION DES PIECES
+    while (!our_grid.start_game())
     {
-
-      // Lecture de l'ID du message
-      /*
-      len = boost::asio::read(first_client, boost::asio::buffer(int_buf), boost::asio::transfer_exactly(sizeof(int)), error);
-      if (error)
+      // SI TEAM ROUGE PAS ENCORE PRETE
+      if (!r_rdy)
       {
-        throw boost::system::system_error(error);
+        buf = get_message(&first_client);
+
+        if (buf[0] != '1')
+        {
+          p.append('0');
+          p.append('F');
+          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+          continue;
+        }
+
+        for (size_t i = 1; i < 81; i = i + 2)
+        {
+          piece_pos = (int) (buf[i] - '0');
+          piece_value = (int) (buf[i+1] - '0');
+
+          get_vector_coord(&coo2D, piece_pos, true);
+          current_piece.rank = (Rank) piece_value;
+          current_piece.side = Side::Red;
+
+          if (!our_grid.create_piece(coo2D, current_piece))
+          {
+            p.append('0');
+            p.append('F');
+            boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+            p.clear();
+            break;
+          }
+        }
+        r_rdy = our_grid.red_t_ok();
       }
 
-      std::string data(buf.begin(), buf.begin() + len);
+      // SI TEAM BLEUE PAS ENCORE PRETE
+      if (!b_rdy)
+      {
+        buf = get_message(&second_client);
 
-      if (data[0] == '1')
-      {*/
-        /*
-        // Lecture de la case
-        len = boost::asio::read(first_client, boost::asio::buffer(buf), boost::asio::transfer_exactly(8));
-        if (error)
+        if (buf[0] != '1')
         {
-          throw boost::system::system_error(error);
+          p.append('0');
+          p.append('F');
+          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+          continue;
         }
 
-        data(buf.begin(), buf.begin() + len);
-        piece_pos = std::stoi(data);
-
-        // Lecture de la valeur de la pièce
-        len = boost::asio::read(first_client, boost::asio::buffer(buf), boost::asio::transfer_exactly(8));
-        if (error)
+        for (size_t i = 1; i < 82; i++)
         {
-          throw boost::system::system_error(error);
+          piece_pos = (int) (buf[i] - '0');
+          piece_value = (int) (buf[i+1] - '0');
+
+          get_vector_coord(&coo2D, piece_pos, false);
+          current_piece.rank = (Rank) piece_value;
+          current_piece.side = Side::Blue;
+
+          if (!our_grid.create_piece(coo2D, current_piece))
+          {
+            p.append('0');
+            p.append('F');
+            boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+            p.clear();
+            break;
+          }
         }
-        std::string data(buf.begin(), buf.begin() + len);
-        piece_value = std::stoi(data);
+        b_rdy = our_grid.blue_t_ok();
+      }
+    }
 
-      }*/
+    // SIGNAL LANCEMENT DU JEU
+    p.append('2');
+    boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+    boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+    p.clear();
 
+    while (/*TODO END*/)
+    {
+      // ACTION PREMIER JOUEUR
+      p.append('2');
+      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+      p.clear();
+
+      // ACTION DEUXIEME JOUEUR
+      p.append('2');
+      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+      p.clear();
     }
   }
   catch(std::exception &e)
