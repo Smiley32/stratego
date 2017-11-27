@@ -87,6 +87,9 @@ public:
 
   void updateMouseCoords(gf::Vector2i coords);
 
+  /// Indique si il reste des pièces à placer
+  bool isEmpty();
+
 private:
   gf::TileLayer m_layer;
   // Nombre de chaque pièce restant à placer

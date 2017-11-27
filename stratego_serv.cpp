@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
     boost::system::error_code ignored_error;
 
     Packet p;
-    p.append('0');
-    p.append('T');
+    p.append(0);
+    p.append(1);
 
     // Envoi du message d'acceptation au client
     boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -108,12 +108,14 @@ int main(int argc, char *argv[])
       {
         buf = get_message(&first_client);
 
-        if (buf[0] != '1')
+        if (buf[0] != 1)
         {
-          p.append('0');
-          p.append('F');
+          p.append(0); // Id du message (acceptation)
+          p.append(0); // 0 -> false ; 1 -> true
           boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+
+          // On dit simplement au premier client qu'il n'est pas accepté, rien à dire au second
+          // boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
           p.clear();
           continue;
         }
@@ -129,14 +131,21 @@ int main(int argc, char *argv[])
 
           if (!our_grid.create_piece(coo2D, current_piece))
           {
-            p.append('0');
-            p.append('F');
+            p.append(0);
+            p.append(0);
             boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
             p.clear();
             break;
           }
         }
         r_rdy = our_grid.red_t_ok();
+
+        if(r_rdy) {
+          p.append(0);
+          p.append(1);
+          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+        }
       }
 
       // SI TEAM BLEUE PAS ENCORE PRETE
@@ -146,8 +155,8 @@ int main(int argc, char *argv[])
 
         if (buf[0] != '1')
         {
-          p.append('0');
-          p.append('F');
+          p.append(0);
+          p.append(0);
           boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
           boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
           p.clear();
@@ -165,32 +174,39 @@ int main(int argc, char *argv[])
 
           if (!our_grid.create_piece(coo2D, current_piece))
           {
-            p.append('0');
-            p.append('F');
+            p.append(0);
+            p.append(0);
             boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
             p.clear();
             break;
           }
         }
         b_rdy = our_grid.blue_t_ok();
+
+        if(b_rdy) {
+          p.append(0);
+          p.append(1);
+          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+        }
       }
     }
 
     // SIGNAL LANCEMENT DU JEU
-    p.append('2');
+    p.append(2);
     boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
     boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
     p.clear();
 
-    while (/*TODO END*/)
+    while (1/*TODO END*/)
     {
       // ACTION PREMIER JOUEUR
-      p.append('2');
+      p.append(2);
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
       // ACTION DEUXIEME JOUEUR
-      p.append('2');
+      p.append(2);
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
     }

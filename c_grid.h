@@ -12,6 +12,7 @@
 class Grid : public gf::Entity {
 public:
   static constexpr unsigned TileSize = 64;
+  static constexpr unsigned GridSize = 10;
 
   Grid(gf::ResourceManager& resources);
   void createGrid();
@@ -31,7 +32,6 @@ public:
   void removePiece(gf::Vector2u coords);
 
 private:
-  static constexpr unsigned GridSize = 10;
   gf::TileLayer m_layer;
   // Indique si une modification a eu lieu sur la grille
   bool modif = false;

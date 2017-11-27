@@ -23,7 +23,7 @@ class s_grid
   private:
 
     Piece grid[10][10];
-    size_t size;
+    size_t size = 10;
     bool is_started;
     int b_pieces[12];
     int r_pieces[12];

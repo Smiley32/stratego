@@ -72,6 +72,15 @@ void Selection::updateMouseCoords(gf::Vector2i coords) {
   mouseCoords = coords;
 }
 
+bool Selection::isEmpty() {
+  for(int i = 0; i < NbPieces; i++) {
+    if(nbPieces[i] != 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
   gf::Texture texture;

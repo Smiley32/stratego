@@ -24,6 +24,8 @@
 
 #include "c_grid.h"
 
+#include "packet.h"
+
 using boost::asio::ip::tcp;
 
 tcp::socket *sock;
@@ -37,11 +39,17 @@ boost::array<char, 128> get_message(tcp::socket *socket) {
   size_t len = socket->read_some(boost::asio::buffer(buf), error);
 
   if(error) {
-    throw boost::system::system_error(error);
+    // throw boost::system::system_error(error);
+    buf[0] = -1;
   }
 
   // std::string data(buf.begin(), buf.begin() + len);
   return buf;
+}
+
+void send_packet(Packet &p) {
+  boost::system::error_code ignored_error;
+  boost::asio::write(*sock, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
 }
 
 int connection(char *ip, char *port) {
@@ -104,10 +112,13 @@ void reception_thread(char *ip, char *port) {
     // La connection est ouverte
     // std::cout << "'" << get_message(&socket) << "'" << std::endl;
 
-    while( true ) {
+    bool fatalError = false;
+    while( !fatalError ) {
       boost::array<char, 128> msg = get_message(sock);
       std::cout << "Id du message : " << (int)msg[0] << std::endl;
-
+      if(msg[0] == -1) {
+        fatalError = true;
+      }
       messages.push(msg);
     }
 /*
@@ -268,6 +279,16 @@ int main(int argc, char *argv[]) {
   displayEscUi = false;
   escPressed = false;
 
+  gf::Action validAction("Validation");
+  validAction.addKeycodeKeyControl(gf::Keycode::Return);
+  validAction.setInstantaneous();
+  actions.addAction(validAction);
+
+  // Erreur de placement des pièces (-1 si aucune)
+  int errorNb = -1;
+
+  bool fatalError = false;
+
   while(window.isOpen()) {
       gf::Event event;
 
@@ -276,7 +297,7 @@ int main(int argc, char *argv[]) {
         actions.processEvent(event);
 
         if(event.type == gf::EventType::MouseMoved) {
-          std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
+          // std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
           s.updateMouseCoords(event.mouseCursor.coords);
         }
 
@@ -367,6 +388,31 @@ int main(int argc, char *argv[]) {
         escPressed = false;
       }
 
+      if(validAction.isActive()) {
+        // On appuie sur entrer pour envoyer les pièces au serveur
+        if(!s.isEmpty()) {
+          // Il reste des pièces à placer
+          errorNb = 1;
+          std::cout << "Salut !" << std::endl;
+        } else {
+          // Envoi des pièces au serveur
+          Packet p;
+
+          // Id du message
+          p.append(1);
+
+          // Ajoute de toutes les pièces au packet
+          for(int i = 0; i < 40; i++) {
+            p.append(i); // Numéro de la pièces (à partir du bas à droite, vers le haut à gauche)
+            p.append((char)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank));
+            std::cout << "x : " << g.GridSize - (i % g.GridSize) - 1 << " ; y : " << g.GridSize - (i / g.GridSize) - 1 << std::endl;
+            std::cout << (int)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank) << std::endl;
+          }
+
+          send_packet(p);
+        }
+      }
+
       // Update
       gf::Time time = clock.restart();
       g.update(time);
@@ -376,12 +422,51 @@ int main(int argc, char *argv[]) {
       renderer.clear();
       entities.render(renderer);
 
+      // Réception des messages
+      boost::array<char, 128> msg;
+      bool msgLu = messages.poll(msg);
+
+      if(msgLu) {
+        std::cout << "Message " << (int)msg[0] << std::endl;
+        switch(msg[0]) { // Type du message
+          case -1:
+            // Erreur provenant du serveur
+            fatalError = true;
+            break;
+          case 0: // Acceptation du serveur
+            if(!msg[1]) {
+              errorNb = 2;
+            }
+            break;
+          default:
+            break;
+        }
+      }
+
+      // UI
+      if(fatalError) {
+        // Afficher la fenêtre d'UI
+        if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+          ui.layoutRowDynamic(25, 1);
+
+          ui.label("Le serveur a rencontré une erreur");
+
+          if(ui.buttonLabel("OK (quitter)")) {
+            window.close();
+          }
+        }
+
+        ui.end();
+        renderer.draw(ui);
+      }
+
       // UI
       if(displayEscUi) {
         // Afficher la fenêtre d'UI
-        if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Movable | gf::UIWindow::Scalable | gf::UIWindow::Closable | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+        if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
-          ui.layoutRowStatic(30, 80, 1);
+          ui.layoutRowDynamic(25, 1);
 
           if(ui.buttonLabel("Quitter")) {
             window.close();
@@ -392,6 +477,31 @@ int main(int argc, char *argv[]) {
 
         renderer.draw(ui);
       }
+
+      if(errorNb != -1) {
+        if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+
+          ui.layoutRowDynamic(25, 1);
+
+          switch(errorNb) {
+            case 1:
+              ui.label("Il reste des pièces à placer");
+              break;
+            default:
+              ui.label("Une erreur est survenue");
+              break;
+          }
+
+          if(ui.buttonLabel("OK")) {
+            errorNb = -1;
+          }
+
+          ui.end();
+
+          renderer.draw(ui);
+        }
+      }
+
 
       renderer.display();
   }
