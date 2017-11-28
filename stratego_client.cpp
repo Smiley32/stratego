@@ -289,7 +289,10 @@ int main(int argc, char *argv[]) {
 
   bool fatalError = false;
 
-  while(window.isOpen()) {
+  bool waitForAnswer = false;
+
+  bool setupFinished = false;
+  while(window.isOpen() && !setupFinished) {
       gf::Event event;
 
       // Entrées
@@ -301,7 +304,7 @@ int main(int argc, char *argv[]) {
           s.updateMouseCoords(event.mouseCursor.coords);
         }
 
-        if(event.type == gf::EventType::MouseButtonPressed) {
+        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer) {
 
           // Clic gauche : choisir une pièce
           if(event.mouseButton.button == gf::MouseButton::Left) {
@@ -376,6 +379,10 @@ int main(int argc, char *argv[]) {
       }
 
       if(closeWindowAction.isActive()) {
+        // Envoi d'un message de déconnexion au serveur
+        Packet p;
+        p.append(6); // Le client quitte
+        send_packet(p);
         window.close();
       }
 
@@ -393,7 +400,6 @@ int main(int argc, char *argv[]) {
         if(!s.isEmpty()) {
           // Il reste des pièces à placer
           errorNb = 1;
-          std::cout << "Salut !" << std::endl;
         } else {
           // Envoi des pièces au serveur
           Packet p;
@@ -410,6 +416,9 @@ int main(int argc, char *argv[]) {
           }
 
           send_packet(p);
+
+          // On attend maintenant la réponse :
+          waitForAnswer = true;
         }
       }
 
@@ -434,8 +443,17 @@ int main(int argc, char *argv[]) {
             fatalError = true;
             break;
           case 0: // Acceptation du serveur
-            if(!msg[1]) {
-              errorNb = 2;
+            if(!waitForAnswer) {
+              if(!msg[1]) {
+                errorNb = 2;
+              }
+            } else {
+              if(!msg[1]) {
+                waitForAnswer = false;
+                errorNb = 3;
+              } else {
+                setupFinished = true;
+              }
             }
             break;
           default:
@@ -469,6 +487,10 @@ int main(int argc, char *argv[]) {
           ui.layoutRowDynamic(25, 1);
 
           if(ui.buttonLabel("Quitter")) {
+            // Envoi d'un message de déconnexion au serveur
+            Packet p;
+            p.append(6); // Le client quitte
+            send_packet(p);
             window.close();
           }
         }
@@ -486,6 +508,12 @@ int main(int argc, char *argv[]) {
           switch(errorNb) {
             case 1:
               ui.label("Il reste des pièces à placer");
+              break;
+            case 2:
+              ui.label("Vous avez été refusé par le serveur");
+              break;
+            case 3:
+              ui.label("Le placement des pièces est incorrect");
               break;
             default:
               ui.label("Une erreur est survenue");
@@ -505,6 +533,9 @@ int main(int argc, char *argv[]) {
 
       renderer.display();
   }
+
+  // Ici on doit attendre
+  std::cout << "Attente du départ !" << std::endl;
 
   return 0;
 }

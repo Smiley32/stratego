@@ -122,8 +122,8 @@ int main(int argc, char *argv[])
 
         for (size_t i = 1; i < 81; i = i + 2)
         {
-          piece_pos = (int) (buf[i] - '0');
-          piece_value = (int) (buf[i+1] - '0');
+          piece_pos = (int) (buf[i]);
+          piece_value = (int) (buf[i+1]);
 
           get_vector_coord(&coo2D, piece_pos, true);
           current_piece.rank = (Rank) piece_value;
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
       {
         buf = get_message(&second_client);
 
-        if (buf[0] != '1')
+        if (buf[0] != 1)
         {
           p.append(0);
           p.append(0);
@@ -165,8 +165,8 @@ int main(int argc, char *argv[])
 
         for (size_t i = 1; i < 82; i++)
         {
-          piece_pos = (int) (buf[i] - '0');
-          piece_value = (int) (buf[i+1] - '0');
+          piece_pos = (int) (buf[i]);
+          piece_value = (int) (buf[i+1]);
 
           get_vector_coord(&coo2D, piece_pos, false);
           current_piece.rank = (Rank) piece_value;

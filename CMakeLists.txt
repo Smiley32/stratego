@@ -22,6 +22,7 @@ add_executable(stratego_client
   stratego_client.cpp
   c_grid.cpp
   c_piece.cpp
+  packet.cpp
 )
 
 target_link_libraries(test_client
