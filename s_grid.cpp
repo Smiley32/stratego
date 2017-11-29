@@ -42,6 +42,8 @@ void s_grid::create_empty_grid()
   b_pieces[9] = r_pieces[9] = 8;
   b_pieces[10] = r_pieces[10] = 1;
   b_pieces[11] = r_pieces[11] = 1;
+
+  gf::Log::info("\nGrid created\n");
 }
 
 
@@ -50,27 +52,27 @@ bool s_grid::create_piece(gf::Vector2u coo2D, Piece p)
   // Vérification jeu non lancé
   if (is_started)
   {
-    fprintf(stderr, "Error create_piece: game already started\n");
+    gf::Log::fatal("\nError create_piece: game already started\n");
     return false;
   }
 
   if (coo2D.x > size || coo2D.y > size || coo2D.x < 0 || coo2D.y < 0)
   {
-    fprintf(stderr, "Error create_piece: Invalid coords %d %d\n", coo2D.x, coo2D.y);
+    gf::Log::error("\nError create_piece: Invalid coords %d %d\n", coo2D.x, coo2D.y);
     return false;
   }
 
   // Vérification pièce du bon côté
   if ( (p.side == Side::Blue && coo2D.y < 6) || (p.side == Side::Red && coo2D.y > 3) )
   {
-    fprintf(stderr, "Error create_piece: Wrong side for Piece %d (%s Team): Tried %d %d\n", (int) p.rank, (char *) p.side, coo2D.x, coo2D.y);
+    gf::Log::error("\nError create_piece: Wrong side for Piece %d (%s Team): Tried %d %d\n", (int) p.rank, (char *) p.side, coo2D.x, coo2D.y);
     return false;
   }
 
   // Vérication case libre
   if (grid[coo2D.x][coo2D.y].rank != Rank::Empty)
   {
-    fprintf(stderr, "Error create_piece: %d %d is not free", coo2D.x, coo2D.y);
+    gf::Log::error("\nError create_piece: %d %d is not free, rank is %d\n", coo2D.x, coo2D.y, (int) p.rank);
     return false;
   }
 
@@ -78,6 +80,7 @@ bool s_grid::create_piece(gf::Vector2u coo2D, Piece p)
   {
     if (b_pieces[(int) p.rank] <= 0)
     {
+      gf::Log::error("\nError create_piece: Too much piece of rank %d for %s Team", (int) p.rank, (char *) p.side);
       return false;
     }
     b_pieces[(int) p.rank]--;
@@ -86,6 +89,7 @@ bool s_grid::create_piece(gf::Vector2u coo2D, Piece p)
   {
     if (r_pieces[(int) p.rank] <= 0)
     {
+      gf::Log::error("\nError create_piece: Too much piece of rank %d for %s Team", (int) p.rank, (char *) p.side);
       return false;
     }
     r_pieces[(int) p.rank]--;
@@ -93,6 +97,7 @@ bool s_grid::create_piece(gf::Vector2u coo2D, Piece p)
   grid[coo2D.x][coo2D.y].rank = p.rank;
   grid[coo2D.x][coo2D.y].side = p.side;
 
+  gf::Log::info("\ncreate_piece: Piece created in %d %d\n", coo2D.x, coo2D.y);
   return true;
 }
 
@@ -104,12 +109,13 @@ bool s_grid::start_game()
   {
     if (r_pieces[i] != 0 || b_pieces[i] != 0)
     {
-      fprintf(stderr, "Error start_game: Wrong number of pieces %zu", i);
+      gf::Log::error("\nError start_game: Wrong number of pieces %zu\n", i);
       return false;
     }
   }
 
   is_started = true;
+  gf::Log::info("\nGame Started\n");
   return is_started;
 }
 
@@ -119,7 +125,7 @@ bool s_grid::red_t_ok()
   {
     if (r_pieces[i] != 0)
     {
-      fprintf(stderr, "Error start_game: Wrong number of pieces %zu", i);
+      gf::Log::error("\nError start_game: Wrong number of pieces %zu\n", i);
       return false;
     }
   }
@@ -133,7 +139,7 @@ bool s_grid::blue_t_ok()
   {
     if (b_pieces[i] != 0)
     {
-      fprintf(stderr, "Error start_game: Wrong number of pieces %zu", i);
+      gf::Log::error("\nError start_game: Wrong number of pieces %zu\n", i);
       return false;
     }
   }
@@ -143,23 +149,24 @@ bool s_grid::blue_t_ok()
 
 bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
 {
+  gf::Log::info("\nTry to move %d %d to %d %d\n", source.x, source.y, dest.x, dest.y);
   // Vérifications coordonnées dans la carte
   if (source.x < 0 || source.y < 0 || source.x > size || source.y > size)
   {
-    fprintf(stderr, "Error move_piece: Invalid coord for source %d %d\n", source.x, source.y);
+    gf::Log::error("\nError move_piece: Invalid coord for source %d %d\n", source.x, source.y);
     return false;
   }
 
   if (dest.x < 0 || dest.y < 0 || dest.x > size || dest.y > size)
   {
-    fprintf(stderr, "Error move_piece: Invalid coord for dest %d %d\n", dest.x, dest.y);
+    gf::Log::error("\nError move_piece: Invalid coord for dest %d %d\n", dest.x, dest.y);
     return false;
   }
 
   // Vérification piece a le droit de bouger
   if ((int) grid[source.x][source.y].rank > 10 || (int) grid[source.x][source.y].rank == 0)
   {
-    fprintf(stderr, "Error move_piece: This piece can't move\n");
+    gf::Log::error("\nError move_piece: This piece can't move\n");
     return false;
   }
 
