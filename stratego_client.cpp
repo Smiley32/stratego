@@ -430,13 +430,19 @@ int main(int argc, char *argv[]) {
           // Id du message
           p.append(1);
 
+          // std::cout << "packet complet '";
+
           // Ajoute de toutes les pièces au packet
           for(int i = 0; i < 40; i++) {
             p.append(i); // Numéro de la pièces (à partir du bas à droite, vers le haut à gauche)
+            // std::cout << i;
             p.append((char)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank));
-            std::cout << "x : " << g.GridSize - (i % g.GridSize) - 1 << " ; y : " << g.GridSize - (i / g.GridSize) - 1 << std::endl;
-            std::cout << (int)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank) << std::endl;
+            // std::cout << (int)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank);
+            // std::cout << "x : " << g.GridSize - (i % g.GridSize) - 1 << " ; y : " << g.GridSize - (i / g.GridSize) - 1 << std::endl;
+            // std::cout << (int)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank) << std::endl;
           }
+
+          // std::cout << "'" << std::endl;
 
           send_packet(p);
 

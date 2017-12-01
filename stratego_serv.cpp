@@ -158,12 +158,12 @@ int main(int argc, char *argv[])
           p.append(0);
           p.append(0);
           boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          // boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
           p.clear();
           continue;
         }
 
-        for (size_t i = 1; i < 82; i++)
+        for (size_t i = 1; i < 81; i = i + 2)
         {
           piece_pos = (int) (buf[i]);
           piece_value = (int) (buf[i+1]);
