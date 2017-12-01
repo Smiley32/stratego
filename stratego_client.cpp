@@ -128,6 +128,9 @@ void reception_thread(char *ip, char *port) {
 }
 
 int main(int argc, char *argv[]) {
+
+  srand (time(NULL));
+
   // Initialisation
   static constexpr gf::Vector2u ScreenSize(768, 800);
   gf::Window window("Petit jeu en réseau (client)", ScreenSize);
@@ -284,12 +287,19 @@ int main(int argc, char *argv[]) {
   validAction.setInstantaneous();
   actions.addAction(validAction);
 
+  gf::Action placementAleatoireAction("Placement aléatoire");
+  placementAleatoireAction.addKeycodeKeyControl(gf::Keycode::A);
+  placementAleatoireAction.setInstantaneous();
+  actions.addAction(placementAleatoireAction);
+
   // Erreur de placement des pièces (-1 si aucune)
   int errorNb = -1;
 
   bool fatalError = false;
 
   bool waitForAnswer = false;
+
+  bool uiOpen = false; // Pour que si une fenêtre est ouverte, on ne puisse pas cliquer autre parts
 
   bool setupFinished = false;
   while(window.isOpen() && !setupFinished) {
@@ -393,6 +403,19 @@ int main(int argc, char *argv[]) {
         escPressed = true;
       } else {
         escPressed = false;
+      }
+
+      if(placementAleatoireAction.isActive()) {
+        // Placement aléatoire de toutes les pièces restantes
+        
+        Piece p = s.getRandomPiece();
+        while(p.rank != Rank::Empty) {
+          std::cout << "Une pièce en plus !" << std::endl;
+          g.setPieceRandom(p);
+          s.takeOnePiece((int)p.rank);
+          
+          p = s.getRandomPiece();
+        }
       }
 
       if(validAction.isActive()) {
@@ -534,8 +557,162 @@ int main(int argc, char *argv[]) {
       renderer.display();
   }
 
-  // Ici on doit attendre
-  std::cout << "Attente du départ !" << std::endl;
+  bool waitForPlayer = true;
+  bool pause = true;
+
+  // Boucle principale de jeu
+  while(window.isOpen()) {
+    gf::Event event;
+
+      // Entrées
+      while(window.pollEvent(event)) {
+        actions.processEvent(event);
+
+        if(event.type == gf::EventType::MouseMoved) {
+          // std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
+          s.updateMouseCoords(event.mouseCursor.coords);
+        }
+
+        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer) {
+
+          
+          
+
+        }
+
+        ui.processEvent(event);
+      }
+
+      if(closeWindowAction.isActive()) {
+        // Envoi d'un message de déconnexion au serveur
+        Packet p;
+        p.append(6); // Le client quitte
+        send_packet(p);
+        window.close();
+      }
+
+      if(escAction.isActive()) {
+        if(!escPressed) {
+          displayEscUi = !displayEscUi;
+        }
+        escPressed = true;
+      } else {
+        escPressed = false;
+      }
+
+      // Update
+      gf::Time time = clock.restart();
+      g.update(time);
+      // entities.update(time);
+
+      // Draw
+      renderer.clear();
+      entities.render(renderer);
+
+      // Réception des messages
+      boost::array<char, 128> msg;
+      bool msgLu = messages.poll(msg);
+
+      if(msgLu) {
+        std::cout << "Message " << (int)msg[0] << std::endl;
+        switch(msg[0]) { // Type du message
+          case -1:
+            // Erreur provenant du serveur
+            fatalError = true;
+            break;
+          case 0: // Acceptation du serveur
+            
+            break;
+          case 2: // Jouer
+            if(waitForPlayer) {
+              waitForPlayer = false;
+            }
+            pause = false; // C'est à nous de jouer
+            break;
+          default:
+            break;
+        }
+      }
+
+      // UI
+      if(pause) {
+        if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+          ui.layoutRowDynamic(25, 1);
+
+          if(waitForPlayer) {
+            ui.label("Attente de l'autre joueur");
+          } else {
+            ui.label("Votre adversaire joue");
+          }
+        }
+
+        ui.end();
+        renderer.draw(ui);
+      }
+
+      if(fatalError) {
+        // Afficher la fenêtre d'UI
+        if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+          ui.layoutRowDynamic(25, 1);
+
+          ui.label("Le serveur a rencontré une erreur");
+
+          if(ui.buttonLabel("OK (quitter)")) {
+            window.close();
+          }
+        }
+
+        ui.end();
+        renderer.draw(ui);
+      }
+
+      // UI
+      if(displayEscUi) {
+        // Afficher la fenêtre d'UI
+        if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+
+          ui.layoutRowDynamic(25, 1);
+
+          if(ui.buttonLabel("Quitter")) {
+            // Envoi d'un message de déconnexion au serveur
+            Packet p;
+            p.append(6); // Le client quitte
+            send_packet(p);
+            window.close();
+          }
+        }
+
+        ui.end();
+
+        renderer.draw(ui);
+      }
+
+      if(errorNb != -1) {
+        if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+
+          ui.layoutRowDynamic(25, 1);
+
+          switch(errorNb) {
+            default:
+              ui.label("Une erreur est survenue");
+              break;
+          }
+
+          if(ui.buttonLabel("OK")) {
+            errorNb = -1;
+          }
+
+          ui.end();
+
+          renderer.draw(ui);
+        }
+      }
+
+
+      renderer.display();
+  }
 
   return 0;
 }

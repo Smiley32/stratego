@@ -74,6 +74,18 @@ bool Grid::setPiece(gf::Vector2u coords, Piece p) {
   return false;
 }
 
+int Grid::aleat(int min, int max) {
+  return rand() % (max - min + 1) + min;
+}
+
+void Grid::setPieceRandom(Piece p) {
+  int pos = aleat(60, 99);
+
+  while(!setPiece({pos % GridSize, pos / GridSize}, p)) {
+    pos = aleat(60, 99);
+  }
+}
+
 void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   // std::cout << "Dessin..." << std::endl;
   // target.draw(m_layer, states);

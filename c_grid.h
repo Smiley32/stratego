@@ -29,12 +29,18 @@ public:
 
   bool setPiece(gf::Vector2u coords, Piece p);
 
+  /// Place une pièce à une position aléatoire disponnible
+  void setPieceRandom(Piece p);
+
   void removePiece(gf::Vector2u coords);
 
 private:
   gf::TileLayer m_layer;
   // Indique si une modification a eu lieu sur la grille
   bool modif = false;
+
+  /// Nombre aléatoire entre min et max
+  int aleat(int min, int max);
 
   Piece grid[GridSize][GridSize];
 };

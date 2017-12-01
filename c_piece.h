@@ -78,10 +78,15 @@ public:
 
   virtual void render(gf::RenderTarget& target, const gf::RenderStates& states) override;
 
-  Piece getPiece(gf::Vector2u coords);
+  
 
   void selectPiece(unsigned int pieceNumber);
   void takeOnePiece(unsigned int pieceNumber);
+
+  Piece getPiece(gf::Vector2u coords);
+
+  /// Récupère un indice aléatoire d'une pièce qu'il reste à placer (Empty si aucune)
+  Piece getRandomPiece();
 
   void addPiece(Piece p);
 
@@ -91,6 +96,9 @@ public:
   bool isEmpty();
 
 private:
+  /// Nombre aléatoire entre min et max
+  int aleat(int min, int max);
+
   gf::TileLayer m_layer;
   // Nombre de chaque pièce restant à placer
   int nbPieces[NbPieces] = {6, 1, 1, 2, 3, 4, 4, 4, 5, 8, 1, 1};

@@ -41,6 +41,26 @@ Piece Selection::getPiece(gf::Vector2u coords) {
   return p;
 }
 
+Piece Selection::getRandomPiece() {
+  Piece p;
+
+  if(isEmpty()) {
+    p.side = Side::Other;
+    p.rank = Rank::Empty;
+  } else {
+    int x;
+    do {
+      x = aleat(0, NbPieces - 1);
+      std::cout << "nb aleat : " << x << std::endl;
+    } while(nbPieces[x] == 0);
+    
+    p.side = Side::Red;
+    p.rank = (Rank)x;
+  }
+
+  return p;
+}
+
 gf::Vector2i Selection::getPieceCoordsFromMouse(gf::Vector2f coords) {
   if(coords.x < getPosition().x || coords.y < getPosition().y || coords.x > getPosition().x + (NbPieces * TileSize) || coords.y > getPosition().y + TileSize) {
     return {-1, -1};
@@ -52,7 +72,7 @@ gf::Vector2i Selection::getPieceCoordsFromMouse(gf::Vector2f coords) {
 void Selection::selectPiece(unsigned int pieceNumber) {
   if(pieceNumber < NbPieces && nbPieces[pieceNumber] > 0) {
     selected = pieceNumber;
-    // grid[selected].rank = Rank::Empty;
+    
     std::cout << "Selected : " << nbPieces[pieceNumber] << std::endl;
   } else {
     selected = -1;
@@ -79,6 +99,10 @@ bool Selection::isEmpty() {
     }
   }
   return true;
+}
+
+int Selection::aleat(int min, int max) {
+  return rand() % (max - min + 1) + min;
 }
 
 void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states) {
