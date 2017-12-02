@@ -39,11 +39,9 @@ boost::array<char, 128> get_message(tcp::socket *socket) {
   size_t len = socket->read_some(boost::asio::buffer(buf), error);
 
   if(error) {
-    // throw boost::system::system_error(error);
     buf[0] = -1;
   }
 
-  // std::string data(buf.begin(), buf.begin() + len);
   return buf;
 }
 
@@ -53,65 +51,29 @@ void send_packet(Packet &p) {
 }
 
 int connection(char *ip, char *port) {
-  // try {
-    boost::asio::io_service io_service;
-    tcp::resolver resolver(io_service);
+  boost::asio::io_service io_service;
+  tcp::resolver resolver(io_service);
 
-    tcp::resolver::query query(ip, port);
+  tcp::resolver::query query(ip, port);
 
-    tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-    tcp::resolver::iterator end;
+  tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+  tcp::resolver::iterator end;
 
-    // Création et connection du socket
-    // tcp::socket socket(io_service);
-    sock = new tcp::socket(io_service);
-    boost::system::error_code error = boost::asio::error::host_not_found;
+  sock = new tcp::socket(io_service);
+  boost::system::error_code error = boost::asio::error::host_not_found;
 
-    while(error && endpoint_iterator != end) {
-      sock->close();
-      sock->connect(*endpoint_iterator++, error);
-    }
+  while(error && endpoint_iterator != end) {
+    sock->close();
+    sock->connect(*endpoint_iterator++, error);
+  }
 
-    if(error) {
-      throw boost::system::system_error(error);
-    }
-
-    // C'est OK, la connection est correcte
-  /*} catch(std::exception &e) {
-    std::cerr << e.what() << std::endl;
-  }*/
+  if(error) {
+    throw boost::system::system_error(error);
+  }
 }
 
 // Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
 void reception_thread(char *ip, char *port) {
-  // Affichage du paramètre
-  // td::cout << msg << std::endl;
-
-  /*try {
-    boost::asio::io_service io_service;
-    tcp::resolver resolver(io_service);
-
-    tcp::resolver::query query(ip, port);
-
-    tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-    tcp::resolver::iterator end;
-
-    // Création et connection du socket
-    tcp::socket socket(io_service);
-    boost::system::error_code error = boost::asio::error::host_not_found;
-
-    while(error && endpoint_iterator != end) {
-      socket.close();
-      socket.connect(*endpoint_iterator++, error);
-    }
-
-    if(error) {
-      throw boost::system::system_error(error);
-    }*/
-
-    // La connection est ouverte
-    // std::cout << "'" << get_message(&socket) << "'" << std::endl;
-
     bool fatalError = false;
     while( !fatalError ) {
       boost::array<char, 128> msg = get_message(sock);
@@ -121,10 +83,6 @@ void reception_thread(char *ip, char *port) {
       }
       messages.push(msg);
     }
-/*
-  } catch(std::exception &e) {
-    std::cout << e.what() << std::endl;
-  }*/
 }
 
 int main(int argc, char *argv[]) {
@@ -154,6 +112,7 @@ int main(int argc, char *argv[]) {
 
   gf::EntityContainer entities;
 
+  // Grille du jeu
   Grid g(resources);
   g.createGrid();
   g.setPosition({64, 32});
@@ -224,8 +183,8 @@ int main(int argc, char *argv[]) {
         ui.layoutRowDynamic(25, 1);
 
         if(ui.buttonLabel("Quitter")) {
-          servSelected = true;
           window.close();
+          servSelected = true;
         }
       }
 
@@ -274,6 +233,10 @@ int main(int argc, char *argv[]) {
     renderer.draw(ui);
 
     renderer.display();
+  }
+
+  if(!window.isOpen()) {
+    return 0;
   }
 
   servIp[servIpLength] = '\0';
@@ -569,27 +532,31 @@ int main(int argc, char *argv[]) {
   // Boucle principale de jeu
   while(window.isOpen()) {
     gf::Event event;
+    std::cout << ".";
 
       // Entrées
       while(window.pollEvent(event)) {
         actions.processEvent(event);
 
-        if(event.type == gf::EventType::MouseMoved) {
-          // std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
-          s.updateMouseCoords(event.mouseCursor.coords);
-        }
+        if(event.type == gf::EventType::MouseButtonPressed) {
 
-        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer) {
-
-          
-          
-
+          if(event.mouseButton.button == gf::MouseButton::Left) {
+            //if(!waitForAnswer && !pause) {
+              // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
+              std::cout << "clic !" << std::endl;
+              gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+              if(coords.x != -1 && coords.y != -1) {
+                g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
+              }
+            //}
+          }
         }
 
         ui.processEvent(event);
       }
 
       if(closeWindowAction.isActive()) {
+        std::cout << "close window action" << std::endl;
         // Envoi d'un message de déconnexion au serveur
         Packet p;
         p.append(6); // Le client quitte
@@ -598,6 +565,7 @@ int main(int argc, char *argv[]) {
       }
 
       if(escAction.isActive()) {
+        std::cout << "esc action" << std::endl;
         if(!escPressed) {
           displayEscUi = !displayEscUi;
         }
@@ -632,8 +600,9 @@ int main(int argc, char *argv[]) {
           case 2: // Jouer
             if(waitForPlayer) {
               waitForPlayer = false;
+            } else {
+              pause = false; // C'est à nous de jouer
             }
-            pause = false; // C'est à nous de jouer
             break;
           default:
             break;
@@ -642,6 +611,7 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(pause) {
+        std::cout << "pause" << std::endl;
         if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);
@@ -658,6 +628,7 @@ int main(int argc, char *argv[]) {
       }
 
       if(fatalError) {
+        std::cout << "fatal error" << std::endl;
         // Afficher la fenêtre d'UI
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
@@ -676,6 +647,7 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(displayEscUi) {
+        std::cout << "esc ui" << std::endl;
         // Afficher la fenêtre d'UI
         if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
@@ -696,6 +668,7 @@ int main(int argc, char *argv[]) {
       }
 
       if(errorNb != -1) {
+        std::cout << "error nb" << std::endl;
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);

@@ -103,6 +103,20 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
     target.draw(line, states);
   }
 
+  if(selected.x != -1 && selected.y != -1) {
+    // Calcul des destinations
+    std::vector<gf::Vector2u> destinations = getDestinations({(unsigned)selected.x, (unsigned)selected.y});
+
+    for(int i = 0; i < destinations.size(); i++) {
+      // Il faut marquer la case
+      std::cout << "Destination (" << destinations[i].x << " ; " << destinations[i].y << ")" << std::endl;
+      gf::RectangleShape marque({TileSize, TileSize});
+      marque.setPosition({getPosition().x + (destinations[i].x * TileSize), getPosition().y + (destinations[i].y * TileSize)});
+      marque.setColor({(0.0F), (0.0F), (1.0F), (0.5F)});
+      target.draw(marque, states);
+    }
+  }
+
   gf::Texture texture;
   texture.loadFromFile("pieces.png");
 
@@ -132,4 +146,118 @@ void Grid::update(gf::Time time) {
       }
     }
   }
+}
+
+bool Grid::selectPiece(gf::Vector2u coords) {
+  if(coords.x > GridSize || coords.y > GridSize) {
+    selected = {-1, -1};
+    return false;
+  }
+
+  if(grid[coords.x][coords.y].rank == Rank::Water || grid[coords.x][coords.y].rank == Rank::Empty) {
+    selected = {-1, -1};
+    return false;
+  }
+
+  selected = coords;
+  return true;
+}
+
+std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
+  std::vector<gf::Vector2u> destinations;
+
+  switch(grid[coords.x][coords.y].rank) {
+    case Rank::Water:
+    case Rank::Empty:
+    case Rank::Bomb:
+    case Rank::Flag:
+      return destinations;
+      break;
+    case Rank::Scout:
+    {
+      // Le scout peut bouger d'autant qu'il veut en ligne, sans passer au dessus des autres pièces
+      // Parcours des cases autour
+      int x = coords.x - 1;
+      while(x > 0) {
+        if(grid[x][coords.y].rank == Rank::Empty || grid[x][coords.y].side == Side::Blue) {
+          destinations.push_back({x, coords.y});
+        }
+        
+        if(grid[x][coords.y].rank != Rank::Empty || grid[x][coords.y].side == Side::Blue) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        x--;
+      }
+
+      x = coords.x + 1;
+      while(x < GridSize) {
+        if(grid[x][coords.y].rank == Rank::Empty || grid[x][coords.y].side == Side::Blue) {
+          destinations.push_back({x, coords.y});
+        }
+        
+        if(grid[x][coords.y].rank != Rank::Empty || grid[x][coords.y].side == Side::Blue) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        x++;
+      }
+
+      int y = coords.y - 1;
+      while(y > 0) {
+        if(grid[coords.x][y].rank == Rank::Empty || grid[coords.x][y].side == Side::Blue) {
+          destinations.push_back({coords.x, y});
+        }
+        
+        if(grid[coords.x][y].rank != Rank::Empty || grid[coords.x][y].side == Side::Blue) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        y--;
+      }
+
+      y = coords.y + 1;
+      while(y < GridSize) {
+        if(grid[coords.x][y].rank == Rank::Empty || grid[coords.x][y].side == Side::Blue) {
+          destinations.push_back({coords.x, y});
+        }
+        
+        if(grid[coords.x][y].rank != Rank::Empty || grid[coords.x][y].side == Side::Blue) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        y++;
+      }
+    }
+      break;
+    default:
+      // Parcours uniquement des 4 cases autour
+      if(coords.x - 1 > 0) {
+        if(grid[coords.x - 1][coords.y].rank == Rank::Empty || grid[coords.x - 1][coords.y].side == Side::Blue) {
+          destinations.push_back({coords.x - 1, coords.y});
+        }
+      }
+
+      if(coords.x + 1 < GridSize) {
+        if(grid[coords.x + 1][coords.y].rank == Rank::Empty || grid[coords.x + 1][coords.y].side == Side::Blue) {
+          destinations.push_back({coords.x + 1, coords.y});
+        }
+      }
+
+      if(coords.y - 1 > 0) {
+        if(grid[coords.x][coords.y - 1].rank == Rank::Empty || grid[coords.x][coords.y - 1].side == Side::Blue) {
+          destinations.push_back({coords.x, coords.y - 1});
+        }
+      }
+
+      if(coords.x + 1 < GridSize) {
+        if(grid[coords.x][coords.y + 1].rank == Rank::Empty || grid[coords.x][coords.y + 1].side == Side::Blue) {
+          destinations.push_back({coords.x, coords.y + 1});
+        }
+      }
+
+      break;
+  }
+
+  return destinations;
 }

@@ -29,7 +29,7 @@ enum class Side {Red, Blue, Other};
  * Lieutenant (4) - (no 5)
  * Sergeant (4) - (no 4)
  * Miner (5) - (no 3)
- * Scout (8) - (no 2)
+ * Scout (8) - (no 2) - Bouge en ligne
  * Spy (1) - (no 1)
  * Flag (1) - Ne bouge pas
  *
