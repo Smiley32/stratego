@@ -17,6 +17,7 @@ class s_grid
     bool start_game();
     bool red_t_ok();
     bool blue_t_ok();
+    bool game_is_end();
     bool create_piece(gf::Vector2u coo2D, Piece p);
     bool move_piece(gf::Vector2u source, gf::Vector2u dest);
 
@@ -25,6 +26,7 @@ class s_grid
     Piece grid[10][10];
     size_t size = 10;
     bool is_started;
+    bool is_end;
     int b_pieces[12];
     int r_pieces[12];
 };

@@ -88,11 +88,14 @@ int main(int argc, char *argv[])
     boost::array<char, 128> buf;
     s_grid our_grid;
     int piece_pos;
+    int spiece_pos;
     int piece_value;
     bool r_rdy = false;
     bool b_rdy = false;
+    bool accepted;
     Piece current_piece;
     gf::Vector2u coo2D;
+    gf::Vector2u scoo2D;
     size_t len;
 
     our_grid.create_empty_grid();
@@ -114,8 +117,7 @@ int main(int argc, char *argv[])
           p.append(0); // 0 -> false ; 1 -> true
           boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
 
-          // On dit simplement au premier client qu'il n'est pas accepté, rien à dire au second
-          // boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          gf::Log::error("\nSignal Error: Expected 1 but get %c\n", buf[0]);
           p.clear();
           continue;
         }
@@ -158,7 +160,7 @@ int main(int argc, char *argv[])
           p.append(0);
           p.append(0);
           boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          // boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          gf::Log::error("\nSignal Error: Expected 1 but get %c\n", buf[0]);
           p.clear();
           continue;
         }
@@ -198,17 +200,89 @@ int main(int argc, char *argv[])
     boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
     p.clear();
 
-    while (1/*TODO END*/)
+    while (our_grid.game_is_end())
     {
       // ACTION PREMIER JOUEUR
       p.append(2);
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
+      accepted = false;
+      while (accepted)
+      {
+        buf = get_message(&first_client);
+
+        if (buf[0] != 3)
+        {
+          p.append(0);
+          p.append(0);
+          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+          gf::Log::error("\nSignal Error: Expected 3 but get %c\n", buf[0]);
+        }
+
+        piece_pos = (int) (buf[1]);
+        spiece_pos = (int) (buf[2]);
+
+        get_vector_coord(&coo2D, piece_pos, true);
+        get_vector_coord(&scoo2D, spiece_pos, true);
+        accepted = our_grid.move_piece(coo2D, scoo2D);
+      }
+
+      // TODO MAJ pour les deux clients
+
+      if (our_grid.game_is_end())
+      {
+        p.append(5);
+        p.append(1);
+        boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+        p.clear();
+        p.append(5);
+        p.append(0);
+        boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+        p.clear();
+      }
+
       // ACTION DEUXIEME JOUEUR
       p.append(2);
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
+
+      accepted = false;
+      while (accepted)
+      {
+        buf = get_message(&second_client);
+
+        if (buf[0] != 3)
+        {
+          p.append(0);
+          p.append(0);
+          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+          gf::Log::error("\nSignal Error: Expected 3 but get %c\n", buf[0]);
+        }
+
+        piece_pos = (int) (buf[1]);
+        spiece_pos = (int) (buf[2]);
+
+        get_vector_coord(&coo2D, piece_pos, false);
+        get_vector_coord(&scoo2D, spiece_pos, false);
+        accepted = our_grid.move_piece(coo2D, scoo2D);
+      }
+
+      // TODO MAJ pour les deux clients
+
+      if (our_grid.game_is_end())
+      {
+        p.append(5);
+        p.append(1);
+        boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+        p.clear();
+        p.append(5);
+        p.append(0);
+        boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+        p.clear();
+      }
     }
   }
   catch(std::exception &e)
