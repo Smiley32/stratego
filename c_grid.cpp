@@ -109,7 +109,7 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
     for(int i = 0; i < destinations.size(); i++) {
       // Il faut marquer la case
-      std::cout << "Destination (" << destinations[i].x << " ; " << destinations[i].y << ")" << std::endl;
+      // std::cout << "Destination (" << destinations[i].x << " ; " << destinations[i].y << ")" << std::endl;
       gf::RectangleShape marque({TileSize, TileSize});
       marque.setPosition({getPosition().x + (destinations[i].x * TileSize), getPosition().y + (destinations[i].y * TileSize)});
       marque.setColor({(0.0F), (0.0F), (1.0F), (0.5F)});
