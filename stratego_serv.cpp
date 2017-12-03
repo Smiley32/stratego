@@ -198,6 +198,7 @@ int main(int argc, char *argv[])
     }
 
     // SIGNAL LANCEMENT DU JEU
+    gf::Log::info("\nSignal 2 for start sent to both client\n");
     p.append(2);
     boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
     boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -206,6 +207,7 @@ int main(int argc, char *argv[])
     while (!our_grid.game_is_end())
     {
       // ACTION PREMIER JOUEUR
+      gf::Log::info("\nSignal 2 for play sent to first client\n");
       p.append(2);
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
@@ -247,6 +249,7 @@ int main(int argc, char *argv[])
       }
 
       // ACTION DEUXIEME JOUEUR
+      gf::Log::info("\nSignal 2 for play sent to first client\n");
       p.append(2);
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
