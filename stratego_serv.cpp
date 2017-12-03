@@ -49,9 +49,12 @@ int main(int argc, char *argv[])
 
     int port;
 
-    // Demande du port à utiliser
-    std::cout << "Quel port souhaitez-vous utiliser ?" << std::endl;
-    std::cin >> port;
+    if (argc != 2)
+    {
+      gf::Log::error("\nError: Invalid number of arguments\n");
+      exit(1);
+    }
+    port = atoi(argv[1]);
     if(port <= 0) {
       // Port incorrect, on met une valeur par défaut
       port = 25565;
