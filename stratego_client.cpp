@@ -532,7 +532,6 @@ int main(int argc, char *argv[]) {
   // Boucle principale de jeu
   while(window.isOpen()) {
     gf::Event event;
-    std::cout << ".";
 
       // Entrées
       while(window.pollEvent(event)) {
@@ -556,7 +555,6 @@ int main(int argc, char *argv[]) {
       }
 
       if(closeWindowAction.isActive()) {
-        std::cout << "close window action" << std::endl;
         // Envoi d'un message de déconnexion au serveur
         Packet p;
         p.append(6); // Le client quitte
@@ -565,7 +563,6 @@ int main(int argc, char *argv[]) {
       }
 
       if(escAction.isActive()) {
-        std::cout << "esc action" << std::endl;
         if(!escPressed) {
           displayEscUi = !displayEscUi;
         }
@@ -611,7 +608,6 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(pause) {
-        std::cout << "pause" << std::endl;
         if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);
@@ -628,7 +624,6 @@ int main(int argc, char *argv[]) {
       }
 
       if(fatalError) {
-        std::cout << "fatal error" << std::endl;
         // Afficher la fenêtre d'UI
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
@@ -647,7 +642,6 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(displayEscUi) {
-        std::cout << "esc ui" << std::endl;
         // Afficher la fenêtre d'UI
         if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
@@ -668,7 +662,6 @@ int main(int argc, char *argv[]) {
       }
 
       if(errorNb != -1) {
-        std::cout << "error nb" << std::endl;
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);

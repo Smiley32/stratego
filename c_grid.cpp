@@ -164,8 +164,6 @@ bool Grid::selectPiece(gf::Vector2u coords) {
 }
 
 std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
-  std::cout << "case (" << coords.x << ", " << coords.y << ")" << std::endl;
-  std::cout << "num" << (int)grid[coords.x][coords.y].rank << std::endl;
 
   std::vector<gf::Vector2u> destinations;
 
@@ -237,34 +235,29 @@ std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
       std::cout << "Salut !" << std::endl;
       // Parcours uniquement des 4 cases autour
       if(coords.x > 0) {
-        std::cout << "<1>";
         if(grid[coords.x - 1][coords.y].rank == Rank::Empty || grid[coords.x - 1][coords.y].side == Side::Blue) {
           destinations.push_back({coords.x - 1, coords.y});
         }
       }
 
       if(coords.x + 1 < GridSize) {
-        std::cout << "<2>";
         if(grid[coords.x + 1][coords.y].rank == Rank::Empty || grid[coords.x + 1][coords.y].side == Side::Blue) {
           destinations.push_back({coords.x + 1, coords.y});
         }
       }
 
       if(coords.y > 0) {
-        std::cout << "<3>";
         if(grid[coords.x][coords.y - 1].rank == Rank::Empty || grid[coords.x][coords.y - 1].side == Side::Blue) {
           destinations.push_back({coords.x, coords.y - 1});
         }
       }
 
       if(coords.x + 1 < GridSize) {
-        std::cout << "<4>";
         if(grid[coords.x][coords.y + 1].rank == Rank::Empty || grid[coords.x][coords.y + 1].side == Side::Blue) {
           destinations.push_back({coords.x, coords.y + 1});
         }
       }
 
-      std::cout << std::endl;
       break;
   }
 
