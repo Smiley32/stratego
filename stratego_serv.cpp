@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
     boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
     p.clear();
 
-    while (our_grid.game_is_end())
+    while (!our_grid.game_is_end())
     {
       // ACTION PREMIER JOUEUR
       p.append(2);
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
       p.clear();
 
       accepted = false;
-      while (accepted)
+      while (!accepted)
       {
         buf = get_message(&first_client);
 
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
       p.clear();
 
       accepted = false;
-      while (accepted)
+      while (!accepted)
       {
         buf = get_message(&second_client);
 
