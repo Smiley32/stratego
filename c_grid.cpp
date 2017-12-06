@@ -2,8 +2,11 @@
 
 #include <iostream>
 
+#include <gf/Easings.h>
+
 Grid::Grid(gf::ResourceManager& resources)
 : m_layer({GridSize, GridSize})
+, anim({0, 0}, {0, 0}, spritePos, gf::seconds(0.5), gf::Ease::elasticInOut)
 {
   m_layer.setTileSize({TileSize, TileSize});
   m_layer.setTexture(resources.getTexture("pieces.png"));
@@ -122,6 +125,11 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
   for(unsigned x = 0; x < GridSize; x++) {
     for(unsigned y = 0; y < GridSize; y++) {
+      // On n'affiche pas la pièce sélectionnée si on a commencé son animation
+      if(animEnabled && selected.x == x && selected.y == y) {
+        continue;
+      }
+
       gf::Vector2u coords(x, 0);
       int r = (int)grid[x][y].rank;
 
@@ -129,6 +137,15 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
       sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y + (y * TileSize)});
       target.draw(sprite, states);
     }
+  }
+
+  // Animation de la pièce
+  if(animEnabled) {
+    int r = (int)grid[selected.x][selected.y].rank;
+    gf::Sprite sprite(texture, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+    sprite.setPosition(spritePos);
+    target.draw(sprite, states);
+    std::cout << "affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
   }
 }
 
@@ -146,6 +163,18 @@ void Grid::update(gf::Time time) {
       }
     }
   }
+
+  if(animEnabled) {
+    if(anim.run(time) == gf::ActivityStatus::Finished) {
+      animEnabled = false;
+
+      grid[target.x][target.y] = grid[selected.x][selected.y];
+      grid[selected.x][selected.y].rank = Rank::Empty;
+      grid[selected.x][selected.y].side = Side::Other;
+      selected = {-1, -1};
+      target = {-1, -1};
+    }
+  }
 }
 
 bool Grid::selectPiece(gf::Vector2u coords) {
@@ -161,6 +190,36 @@ bool Grid::selectPiece(gf::Vector2u coords) {
 
   selected = coords;
   return true;
+}
+
+bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
+  if(!isSelected()) {
+    return false;
+  }
+
+  // std::cout << "Salut :)" << std::endl;
+  std::vector<gf::Vector2u> destinations = getDestinations(selected);
+
+  for(int i = 0; i < destinations.size(); i++) {
+    std::cout << destinations[i].x << " - " << destinations[i].y << std::endl;
+    if(coords.x == destinations[i].x && coords.y == destinations[i].y) {
+      // On commence l'animation
+      animEnabled = true;
+      target = coords;
+
+      anim.restart();
+      anim.setOrigin({getPosition().x + (selected.x * TileSize), getPosition().y + (selected.y * TileSize)});
+      anim.setTarget({getPosition().x + (coords.x * TileSize), getPosition().y + (coords.y * TileSize)});
+      anim.setDuration(gf::seconds(1));
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool Grid::isSelected() {
+  return selected.x != -1 && selected.y != -1;
 }
 
 std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
@@ -232,7 +291,6 @@ std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
     }
       break;
     default:
-      std::cout << "Salut !" << std::endl;
       // Parcours uniquement des 4 cases autour
       if(coords.x > 0) {
         if(grid[coords.x - 1][coords.y].rank == Rank::Empty || grid[coords.x - 1][coords.y].side == Side::Blue) {

@@ -7,12 +7,16 @@
 #include <gf/Curves.h>
 #include <gf/Color.h>
 #include <gf/Shapes.h>
+#include <gf/Activities.h>
 #include <vector>
 
 #include "c_piece.h"
 
 class Grid : public gf::Entity {
 public:
+  /// Case sélectionnée (on affiche les déplacements possibles avec cette pièce)
+  gf::Vector2i selected = {-1, -1};
+
   /// Taille (pixels) d'une tile
   static constexpr unsigned TileSize = 64;
 
@@ -54,6 +58,12 @@ public:
   /// Séléctionne une pièce (retourne false si c'est un échec (case vide par ex))
   bool selectPiece(gf::Vector2u coords);
 
+  /// Déplace et anime la pièce sélectionnée vers coords
+  bool moveSelectedPieceTo(gf::Vector2u coords);
+
+  /// Indique si une pièce est sélectionnée
+  bool isSelected();
+
 private:
   /// Layer : n'est plus directement utilisé : à supprimer
   gf::TileLayer m_layer;
@@ -67,11 +77,17 @@ private:
   /// Nombre aléatoire entre min et max
   int aleat(int min, int max);
 
-  /// Case sélectionnée (on affiche les déplacements possibles avec cette pièce)
-  gf::Vector2i selected = {-1, -1};
+  gf::Vector2i target = {-1, -1};
 
   /// Tableau représentant la grille
   Piece grid[GridSize][GridSize];
+
+  /// Animation quand on déplace une pièce d'une case à une autre
+  gf::MoveToActivity anim;
+
+  bool animEnabled = false;
+
+  gf::Vector2f spritePos;
 };
 
 #endif

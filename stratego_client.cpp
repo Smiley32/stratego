@@ -528,6 +528,7 @@ int main(int argc, char *argv[]) {
 
   bool waitForPlayer = true;
   bool pause = true;
+  bool waitForConfirm = false;
 
   // Boucle principale de jeu
   while(window.isOpen()) {
@@ -545,7 +546,20 @@ int main(int argc, char *argv[]) {
               std::cout << "clic !" << std::endl;
               gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
               if(coords.x != -1 && coords.y != -1) {
-                g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
+                if(g.isSelected()) {
+                  if(g.moveSelectedPieceTo(coords)) {
+                    // Envoi au serveur du mouvement
+                    Packet p;
+                    p.append(3);
+                    // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
+                    p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
+                    p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
+                    send_packet(p);
+                    waitForConfirm = true;
+                  }
+                } else {
+                  g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
+                }
               }
             //}
           }
@@ -592,7 +606,12 @@ int main(int argc, char *argv[]) {
             fatalError = true;
             break;
           case 0: // Acceptation du serveur
-            
+            if(!msg[1]) {
+              fatalError = true;
+            } else if(waitForConfirm) {
+              waitForConfirm = false;
+              pause = true;
+            }
             break;
           case 2: // Jouer
             if(waitForPlayer) {
