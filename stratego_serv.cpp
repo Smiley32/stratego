@@ -244,6 +244,21 @@ int main(int argc, char *argv[])
         get_vector_coord(&coo2D, piece_pos, true);
         get_vector_coord(&scoo2D, spiece_pos, true);
         accepted = our_grid.move_piece(coo2D, scoo2D);
+
+        if (accepted)
+        {
+          p.append(0);
+          p.append(1);
+          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+        }
+        else
+        {
+          p.append(0);
+          p.append(0);
+          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+        }
       }
 
       // Envoie update premier client
@@ -302,6 +317,21 @@ int main(int argc, char *argv[])
         get_vector_coord(&coo2D, piece_pos, false);
         get_vector_coord(&scoo2D, spiece_pos, false);
         accepted = our_grid.move_piece(coo2D, scoo2D);
+
+        if (accepted)
+        {
+          p.append(0);
+          p.append(1);
+          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+        }
+        else
+        {
+          p.append(0);
+          p.append(0);
+          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          p.clear();
+        }
       }
 
       // Envoie update premier client
