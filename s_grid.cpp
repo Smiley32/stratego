@@ -47,6 +47,10 @@ void s_grid::create_empty_grid()
   gf::Log::info("\n\tGrid created\n");
 }
 
+int s_grid::get_value(gf::Vector2u coo2D)
+{
+  return (int) grid[coo2D.x][coo2D.y].rank;
+}
 
 bool s_grid::create_piece(gf::Vector2u coo2D, Piece p)
 {

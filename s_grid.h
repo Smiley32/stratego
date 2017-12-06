@@ -14,6 +14,7 @@ class s_grid
   public:
 
     void create_empty_grid();
+    int get_value(gf::Vector2u coo2D);
     bool start_game();
     bool red_t_ok();
     bool blue_t_ok();
