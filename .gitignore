@@ -1,0 +1,22 @@
+# Cmake
+CMakeCache.txt
+*.cmake
+*.make
+Makefile
+CMakeFiles/*
+
+# Executable
+stratego_client
+stratego_serv
+test_client
+test_client2
+test_serv
+
+# Fichiers de compil
+*.o
+
+# Headers précompilés
+*.gch
+
+# Autres
+*.json
