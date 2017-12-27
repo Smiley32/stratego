@@ -32,11 +32,11 @@ tcp::socket *sock;
 gf::Queue<boost::array<char, 128>> messages;
 
 // Récupération d'un message du serveur
-boost::array<char, 128> get_message(tcp::socket *socket) {
+boost::array<char, 128> get_message(tcp::socket *socket, size_t *length) {
   boost::array<char, 128> buf;
   boost::system::error_code error;
 
-  size_t len = socket->read_some(boost::asio::buffer(buf), error);
+  *length = socket->read_some(boost::asio::buffer(buf), error);
 
   if(error) {
     buf[0] = -1;
@@ -76,12 +76,49 @@ int connection(char *ip, char *port) {
 void reception_thread(char *ip, char *port) {
     bool fatalError = false;
     while( !fatalError ) {
-      boost::array<char, 128> msg = get_message(sock);
-      std::cout << "Id du message : " << (int)msg[0] << std::endl;
-      if(msg[0] == -1) {
-        fatalError = true;
-      }
-      messages.push(msg);
+      size_t readLength;
+      boost::array<char, 128> msg = get_message(sock, &readLength);
+      std::cout << "Id du message : " << (int)msg[0] << " ; taille " << readLength << std::endl;
+
+      // Taille attendue des messages
+      size_t length;
+      bool continuer = true;
+      do {
+        switch(msg[0]) {
+          case -1:
+            fatalError = true;
+            break;
+          case 0:
+          case 5:
+            length = 2;
+            break;
+          case 1:
+          case 3:
+            length = 3;
+            break;
+          case 4:
+            length = 5;
+            break;
+          default:
+            length = 1;
+            break;
+        }
+
+        std::cout << "Ajout du message" << (int)msg[0] << std::endl;
+        messages.push(msg);
+
+        continuer = false;
+        if(readLength > length) {
+          std::cout << "Il y a une concaténation..." << std::endl;
+          // On décale msg de la longueur de length
+          for(size_t i = length; i < 128; i++) {
+            msg[i - length] = msg[i];
+          }
+          continuer = true;
+          readLength -= length;
+        }
+        
+      } while(continuer && !fatalError);
     }
 }
 
@@ -90,7 +127,7 @@ int main(int argc, char *argv[]) {
   srand (time(NULL));
 
   // Initialisation
-  static constexpr gf::Vector2u ScreenSize(768, 800);
+  static constexpr gf::Vector2u ScreenSize(768, 700);
   gf::Window window("Petit jeu en réseau (client)", ScreenSize);
   window.setFramerateLimit(60);
   gf::RenderWindow renderer(window);
@@ -115,11 +152,11 @@ int main(int argc, char *argv[]) {
   // Grille du jeu
   Grid g(resources);
   g.createGrid();
-  g.setPosition({64, 32});
+  g.setPosition({32, 0});
   entities.addEntity(g);
 
   Selection s(resources);
-  s.setPosition({0, 704});
+  s.setPosition({0, g.getPosition().y + (10 * g.TileSize)});
   entities.addEntity(s);
 
   // Boucle de jeu
@@ -522,9 +559,10 @@ int main(int argc, char *argv[]) {
         }
       }
 
-
       renderer.display();
   }
+
+  std::cout << "Salut !" << std::endl;
 
   bool waitForPlayer = true;
   bool pause = true;
@@ -599,7 +637,7 @@ int main(int argc, char *argv[]) {
       bool msgLu = messages.poll(msg);
 
       if(msgLu) {
-        std::cout << "Message " << (int)msg[0] << std::endl;
+        std::cout << "Message lu : " << (int)msg[0] << std::endl;
         switch(msg[0]) { // Type du message
           case -1:
             // Erreur provenant du serveur
@@ -616,6 +654,7 @@ int main(int argc, char *argv[]) {
           case 2: // Jouer
             if(waitForPlayer) {
               waitForPlayer = false;
+              pause = true;
             } else {
               pause = false; // C'est à nous de jouer
             }
