@@ -72,6 +72,14 @@ int connection(char *ip, char *port) {
   }
 }
 
+enum class State {
+  WaitPlayer,
+  WaitUpdate,
+  WaitAnswer,
+  FatalError,
+  Play
+};
+
 // Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
 void reception_thread(char *ip, char *port) {
     bool fatalError = false;
@@ -564,6 +572,8 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Salut !" << std::endl;
 
+  State state = State::WaitPlayer;
+
   bool waitForPlayer = true;
   bool pause = true;
   bool waitForConfirm = false;
@@ -581,6 +591,10 @@ int main(int argc, char *argv[]) {
           if(event.mouseButton.button == gf::MouseButton::Left) {
             //if(!waitForAnswer && !pause) {
               // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
+              /*if(state != State::Play) {
+                continue;
+              }*/
+
               std::cout << "clic !" << std::endl;
               gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
               if(coords.x != -1 && coords.y != -1) {
@@ -593,7 +607,8 @@ int main(int argc, char *argv[]) {
                     p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
                     p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
                     send_packet(p);
-                    waitForConfirm = true;
+                    
+                    state = State::WaitAnswer;
                   }
                 } else {
                   g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
@@ -606,7 +621,7 @@ int main(int argc, char *argv[]) {
         ui.processEvent(event);
       }
 
-      if(closeWindowAction.isActive()) {
+      if(closeWindowAction.isActive() && state != State::FatalError) {
         // Envoi d'un message de déconnexion au serveur
         Packet p;
         p.append(6); // Le client quitte
@@ -636,27 +651,26 @@ int main(int argc, char *argv[]) {
       boost::array<char, 128> msg;
       bool msgLu = messages.poll(msg);
 
-      if(msgLu) {
+      if(msgLu && state != State::FatalError) {
         std::cout << "Message lu : " << (int)msg[0] << std::endl;
         switch(msg[0]) { // Type du message
           case -1:
             // Erreur provenant du serveur
-            fatalError = true;
+            state = State::FatalError;
             break;
           case 0: // Acceptation du serveur
             if(!msg[1]) {
-              fatalError = true;
-            } else if(waitForConfirm) {
-              waitForConfirm = false;
-              pause = true;
+              // Le mouvement n'a pas été accepté
+              state = State::FatalError;
+            } else if(state == State::WaitAnswer) {
+              state = State::WaitUpdate;
             }
             break;
           case 2: // Jouer
-            if(waitForPlayer) {
-              waitForPlayer = false;
-              pause = true;
+            if(state == State::WaitPlayer) {
+              state = State::WaitUpdate;
             } else {
-              pause = false; // C'est à nous de jouer
+              state = State::Play;
             }
             break;
           default:
@@ -665,12 +679,12 @@ int main(int argc, char *argv[]) {
       }
 
       // UI
-      if(pause) {
+      if(state == State::WaitUpdate || state == State::WaitPlayer) {
         if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);
 
-          if(waitForPlayer) {
+          if(state == State::WaitPlayer) {
             ui.label("Attente de l'autre joueur");
           } else {
             ui.label("Votre adversaire joue");
@@ -681,7 +695,7 @@ int main(int argc, char *argv[]) {
         renderer.draw(ui);
       }
 
-      if(fatalError) {
+      if(state == State::FatalError) {
         // Afficher la fenêtre d'UI
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
@@ -696,10 +710,7 @@ int main(int argc, char *argv[]) {
 
         ui.end();
         renderer.draw(ui);
-      }
-
-      // UI
-      if(displayEscUi) {
+      } else if(displayEscUi) { // Menu ESC
         // Afficher la fenêtre d'UI
         if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
@@ -715,31 +726,8 @@ int main(int argc, char *argv[]) {
         }
 
         ui.end();
-
         renderer.draw(ui);
       }
-
-      if(errorNb != -1) {
-        if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
-
-          ui.layoutRowDynamic(25, 1);
-
-          switch(errorNb) {
-            default:
-              ui.label("Une erreur est survenue");
-              break;
-          }
-
-          if(ui.buttonLabel("OK")) {
-            errorNb = -1;
-          }
-
-          ui.end();
-
-          renderer.draw(ui);
-        }
-      }
-
 
       renderer.display();
   }
