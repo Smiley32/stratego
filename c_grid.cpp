@@ -28,6 +28,14 @@ Grid::Grid(gf::ResourceManager& resources)
   grid[6][5].rank = Rank::Water;
   grid[7][4].rank = Rank::Water;
   grid[7][5].rank = Rank::Water;
+
+  // Ajout des pièces de l'adversaire
+  for(unsigned x = 0; x < GridSize; x++) {
+    for(unsigned y = 0; y < 4; y++) {
+      grid[x][y].side = Side::Blue;
+      grid[x][y].rank = Rank::Unknown;
+    }
+  }
 }
 
 void Grid::createGrid() {
@@ -123,6 +131,9 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   gf::Texture texture;
   texture.loadFromFile("pieces.png");
 
+  gf::Texture blueTexture;
+  blueTexture.loadFromFile("pieces_blue.png");
+
   for(unsigned x = 0; x < GridSize; x++) {
     for(unsigned y = 0; y < GridSize; y++) {
       // On n'affiche pas la pièce sélectionnée si on a commencé son animation
@@ -133,7 +144,14 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
       gf::Vector2u coords(x, 0);
       int r = (int)grid[x][y].rank;
 
-      gf::Sprite sprite(texture, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+      gf::Texture *t;
+      if(grid[x][y].side == Side::Blue) {
+        t = &blueTexture;
+      } else {
+        t = &texture;
+      }
+
+      gf::Sprite sprite(*t, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
       sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y + (y * TileSize)});
       target.draw(sprite, states);
     }
@@ -183,7 +201,7 @@ bool Grid::selectPiece(gf::Vector2u coords) {
     return false;
   }
 
-  if(grid[coords.x][coords.y].rank == Rank::Water || grid[coords.x][coords.y].rank == Rank::Empty) {
+  if(grid[coords.x][coords.y].side == Side::Blue || grid[coords.x][coords.y].rank == Rank::Water || grid[coords.x][coords.y].rank == Rank::Empty) {
     selected = {-1, -1};
     return false;
   }

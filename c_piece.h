@@ -35,6 +35,7 @@ enum class Side {Red, Blue, Other};
  *
  * Water - Case d'eau (8 en tout) - non accessibles
  * Empty - Cases vides
+ * Unknown - Pièce inconnue
  */
 enum class Rank : int {
   Bomb = 0,
@@ -50,7 +51,8 @@ enum class Rank : int {
   Spy = 10,
   Flag = 11,
   Water = 12,
-  Empty = 13
+  Empty = 13,
+  Unknown = 14
 };
 
 struct Piece {

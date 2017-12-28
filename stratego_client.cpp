@@ -352,7 +352,7 @@ int main(int argc, char *argv[]) {
                 // Suppression de la pièce
                 Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
 
-                if(p.rank != Rank::Empty && p.rank != Rank::Water) {
+                if(p.side != Side::Blue && p.rank != Rank::Empty && p.rank != Rank::Water) {
                   // On peut supprimer la pièce de la grille
                   g.removePiece({(unsigned)c.x, (unsigned)c.y});
 
