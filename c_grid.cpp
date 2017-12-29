@@ -11,6 +11,12 @@ Grid::Grid(gf::ResourceManager& resources)
   m_layer.setTileSize({TileSize, TileSize});
   m_layer.setTexture(resources.getTexture("pieces.png"));
 
+  updateFirstPiece.side = Side::Other;
+  updateFirstPiece.rank = Rank::Unknown;
+
+  updateLastPiece.side = Side::Other;
+  updateLastPiece.rank = Rank::Unknown;
+
   // Initialisation de la grille
   for(unsigned x = 0; x < GridSize; x++) {
     for(unsigned y = 0; y < GridSize; y++) {
@@ -137,7 +143,9 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   for(unsigned x = 0; x < GridSize; x++) {
     for(unsigned y = 0; y < GridSize; y++) {
       // On n'affiche pas la pièce sélectionnée si on a commencé son animation
-      if(animEnabled && selected.x == x && selected.y == y) {
+      if(animEnabled &&
+          ((updateFirstCoords.x != -1 && selected.x == x && selected.y == y) ||
+           (updateFirstCoords.x == x && updateFirstCoords.y == y))) {
         continue;
       }
 
@@ -159,11 +167,17 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
   // Animation de la pièce
   if(animEnabled) {
-    int r = (int)grid[selected.x][selected.y].rank;
+    int r;
+    if(updateFirstCoords.x != -1) {
+      r = (int)grid[updateFirstCoords.x][updateFirstCoords.y].rank;
+    } else {
+      r = (int)grid[selected.x][selected.y].rank;
+    }
+    
     gf::Sprite sprite(texture, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
     sprite.setPosition(spritePos);
     target.draw(sprite, states);
-    std::cout << "affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
+    std::cout << "<" << r << "> affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
   }
 }
 
@@ -186,10 +200,28 @@ void Grid::update(gf::Time time) {
     if(anim.run(time) == gf::ActivityStatus::Finished) {
       animEnabled = false;
 
-      grid[target.x][target.y] = grid[selected.x][selected.y];
-      grid[selected.x][selected.y].rank = Rank::Empty;
-      grid[selected.x][selected.y].side = Side::Other;
-      selected = {-1, -1};
+      if(updateFirstCoords.x != -1) {
+        // L'animation était celle d'un update
+
+        // Mise à jour de la grille
+        grid[updateLastCoords.x][updateLastCoords.y].rank = updateLastPiece.rank;
+        grid[updateLastCoords.x][updateLastCoords.y].side = updateLastPiece.side;
+        grid[updateFirstCoords.x][updateFirstCoords.y].rank = Rank::Empty;
+        grid[updateFirstCoords.x][updateFirstCoords.y].side = Side::Other;
+
+        // Réinitialisation des valeurs pour la prochaine animation
+        updateFirstCoords = {-1, -1};
+        updateLastCoords = {-1, -1};
+        updateFirstPiece.rank = Rank::Unknown;
+        updateLastPiece.rank = Rank::Unknown;
+        updateFirstPiece.side = Side::Other;
+        updateLastPiece.side = Side::Other;
+      } else {
+        grid[target.x][target.y] = grid[selected.x][selected.y];
+        grid[selected.x][selected.y].rank = Rank::Empty;
+        grid[selected.x][selected.y].side = Side::Other;
+        selected = {-1, -1};
+      }
       target = {-1, -1};
     }
   }
@@ -234,6 +266,44 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
   }
 
   return false;
+}
+
+bool Grid::makeUpdate(gf::Vector2u firstCoords, Piece firstPiece, gf::Vector2u lastCoords, Piece lastPiece) {
+  // TODO: vérifications de firstCoords et lastCoords
+  updateFirstCoords = firstCoords;
+  updateFirstPiece = firstPiece;
+  updateLastCoords = lastCoords;
+  updateLastPiece = lastPiece;
+
+  if(discoverPiece(firstCoords, firstPiece.rank)) {
+    return movePieceTo(firstCoords, lastCoords);
+  } else {
+    std::cout << "Erreur : makeUpdate" << std::endl;
+    return false;
+  }
+}
+
+bool Grid::movePieceTo(gf::Vector2u first, gf::Vector2u last) {
+  // TODO: vérifications de first et last
+
+  updateFirstCoords = first;
+  updateLastCoords = last;
+
+  animEnabled = true;
+  target = last;
+
+  anim.restart();
+  anim.setOrigin({getPosition().x + (first.x * TileSize), getPosition().y + (first.y * TileSize)});
+  anim.setTarget({getPosition().x + (last.x * TileSize), getPosition().y + (last.y * TileSize)});
+  anim.setDuration(gf::seconds(1));
+
+  return true;
+}
+
+bool Grid::discoverPiece(gf::Vector2u coords, Rank r) {
+  // TODO: vérification de coords
+
+  grid[coords.x][coords.y].rank = r;
 }
 
 bool Grid::isSelected() {

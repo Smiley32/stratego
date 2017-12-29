@@ -77,6 +77,8 @@ enum class State {
   WaitUpdate,
   WaitAnswer,
   FatalError,
+  WaitUpdateAnswer,
+  WaitUpdateAfterAnswer,
   Play
 };
 
@@ -585,21 +587,22 @@ int main(int argc, char *argv[]) {
       // Entrées
       while(window.pollEvent(event)) {
         actions.processEvent(event);
+        ui.processEvent(event);
 
         if(event.type == gf::EventType::MouseButtonPressed) {
 
           if(event.mouseButton.button == gf::MouseButton::Left) {
             //if(!waitForAnswer && !pause) {
               // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
-              /*if(state != State::Play) {
+              if(state != State::Play) {
                 continue;
-              }*/
+              }
 
               std::cout << "clic !" << std::endl;
               gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
               if(coords.x != -1 && coords.y != -1) {
                 if(g.isSelected()) {
-                  if(g.moveSelectedPieceTo(coords)) {
+                  // if(g.moveSelectedPieceTo(coords)) {
                     // Envoi au serveur du mouvement
                     Packet p;
                     p.append(3);
@@ -608,8 +611,8 @@ int main(int argc, char *argv[]) {
                     p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
                     send_packet(p);
                     
-                    state = State::WaitAnswer;
-                  }
+                    state = State::WaitUpdateAnswer;
+                  // }
                 } else {
                   g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
                 }
@@ -617,8 +620,6 @@ int main(int argc, char *argv[]) {
             //}
           }
         }
-
-        ui.processEvent(event);
       }
 
       if(closeWindowAction.isActive() && state != State::FatalError) {
@@ -664,6 +665,8 @@ int main(int argc, char *argv[]) {
               state = State::FatalError;
             } else if(state == State::WaitAnswer) {
               state = State::WaitUpdate;
+            } else if(state == State::WaitUpdateAnswer) {
+              state = State::WaitUpdateAfterAnswer;
             }
             break;
           case 2: // Jouer
@@ -671,6 +674,52 @@ int main(int argc, char *argv[]) {
               state = State::WaitUpdate;
             } else {
               state = State::Play;
+            }
+            break;
+          case 4: // Update
+            if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
+              state = State::FatalError;
+              break;
+            }
+
+            Piece firstPiece;
+            gf::Vector2u firstCoords;
+
+            firstCoords.x = msg[1] % g.GridSize;
+            firstCoords.y = (int)(msg[1] / g.GridSize);
+            if(state == State::WaitUpdateAfterAnswer) {
+              firstCoords.x = g.GridSize - 1 - firstCoords.x;
+              firstCoords.y = g.GridSize - 1 - firstCoords.y;
+            }
+            std::cout << "Valeur : " << (int)msg[2] << std::endl;
+            firstPiece.rank = (Rank)msg[2];
+            firstPiece.side = state == State::WaitUpdate ? Side::Blue : Side::Red;
+
+            Piece lastPiece;
+            gf::Vector2u lastCoords;
+            lastCoords.x = msg[3] % g.GridSize;
+            lastCoords.y = (int)(msg[3] / g.GridSize);
+            if(state == State::WaitUpdateAfterAnswer) {
+              lastCoords.x = g.GridSize - 1 - lastCoords.x;
+              lastCoords.y = g.GridSize - 1 - lastCoords.y;
+            }
+            std::cout << "Coords (first) : " << firstCoords.x << " ; " << firstCoords.y << std::endl;
+            std::cout << "Coords (last) : " << lastCoords.x << " ; " << lastCoords.y << std::endl;
+            lastPiece.rank = (Rank)msg[4];
+            if(lastPiece.rank == Rank::Empty) {
+              // Il y a eu égalité donc la case est vide
+              lastPiece.side = Side::Other;
+            } else if(lastPiece.rank == firstPiece.rank) {
+              // Le rang de la pièce est inchangé
+              lastPiece.side = state == State::WaitUpdate ? Side::Blue : Side::Red;
+            } else {
+              lastPiece.side = state == State::WaitUpdate ? Side::Red : Side::Blue;
+            }
+
+            state = State::WaitPlayer;
+
+            if(!g.makeUpdate(firstCoords, firstPiece, lastCoords, lastPiece)) {
+              state = State::FatalError; // Une erreur est survenue lors de l'update
             }
             break;
           default:

@@ -61,10 +61,19 @@ public:
   /// Déplace et anime la pièce sélectionnée vers coords
   bool moveSelectedPieceTo(gf::Vector2u coords);
 
+  /// Fais la mise à jour reçue par le serveur avec l'animation qui se doit
+  bool makeUpdate(gf::Vector2u firstCoords, Piece firstPiece, gf::Vector2u lastCoords, Piece lastPiece);
+
   /// Indique si une pièce est sélectionnée
   bool isSelected();
 
 private:
+  /// Bouge la pièce (en l'animant) de first à last
+  bool movePieceTo(gf::Vector2u first, gf::Vector2u last);
+
+  /// Découvre une pièce ennemie (bleue)
+  bool discoverPiece(gf::Vector2u coords, Rank r);
+
   /// Layer : n'est plus directement utilisé : à supprimer
   gf::TileLayer m_layer;
 
@@ -86,6 +95,11 @@ private:
   gf::MoveToActivity anim;
 
   bool animEnabled = false;
+
+  gf::Vector2i updateFirstCoords = {-1, -1};
+  Piece updateFirstPiece;
+  gf::Vector2i updateLastCoords = {-1, -1};
+  Piece updateLastPiece;
 
   gf::Vector2f spritePos;
 };
