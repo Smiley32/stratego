@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
       }
 
       // ACTION DEUXIEME JOUEUR
-      gf::Log::info("\nSignal 2 for play sent to first client\n");
+      gf::Log::info("\nSignal 2 for play sent to second client\n");
       p.append(2);
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
