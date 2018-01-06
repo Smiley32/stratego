@@ -263,6 +263,7 @@ int main(int argc, char *argv[])
 
       // Envoie update premier client
       p.append(4);
+      printf("bla bla %d\n", get_pos_from_vector(&coo2D, true));
       p.append(get_pos_from_vector(&coo2D, true));
       p.append(our_grid.get_value(coo2D));
       p.append(get_pos_from_vector(&scoo2D, true));

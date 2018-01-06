@@ -190,7 +190,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
     // Vérification présence enemie à côté
     if (source.x != dest.x)
     { // Si on se déplace horizontalement
-      for (size_t i = source.x; i < dest.x; i++)
+      for (size_t i = source.x + 1; i < dest.x; i++)
       {
         // On vérifie qu'il n'y a pas des pièces sur la trajectoire
         if ((int) grid[i][dest.y].rank != 13)
@@ -221,7 +221,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
     }
     else
     { // Si on se déplace verticalement
-      for (size_t i = source.y; i < dest.y; i++)
+      for (size_t i = source.y + 1; i < dest.y; i++)
       {
         // On vérifie qu'il n'y a pas de pièces sur la trajectoire
         if ((int) grid[dest.x][i].rank != 13)
