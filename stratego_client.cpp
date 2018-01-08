@@ -132,6 +132,26 @@ void reception_thread(char *ip, char *port) {
     }
 }
 
+void escFct(gf::RenderWindow &renderer, gf::UI &ui, gf::Window &window) {
+  // Afficher la fenêtre d'UI
+  if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+
+    ui.layoutRowDynamic(25, 1);
+
+    if(ui.buttonLabel("Quitter")) {
+      // Envoi d'un message de déconnexion au serveur
+      Packet p;
+      p.append(6); // Le client quitte
+      send_packet(p);
+      window.close();
+    }
+  }
+
+  ui.end();
+
+  renderer.draw(ui);
+}
+
 int main(int argc, char *argv[]) {
 
   srand (time(NULL));
@@ -520,7 +540,8 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(displayEscUi) {
-        // Afficher la fenêtre d'UI
+        escFct(renderer, ui, window);
+        /*// Afficher la fenêtre d'UI
         if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);
@@ -536,7 +557,7 @@ int main(int argc, char *argv[]) {
 
         ui.end();
 
-        renderer.draw(ui);
+        renderer.draw(ui);*/
       }
 
       if(errorNb != -1) {
