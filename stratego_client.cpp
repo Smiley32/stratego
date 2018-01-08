@@ -324,7 +324,7 @@ int main(int argc, char *argv[]) {
           s.updateMouseCoords(event.mouseCursor.coords);
         }
 
-        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer) {
+        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer && !displayEscUi) {
 
           // Clic gauche : choisir une pièce
           if(event.mouseButton.button == gf::MouseButton::Left) {
@@ -592,7 +592,6 @@ int main(int argc, char *argv[]) {
         if(event.type == gf::EventType::MouseButtonPressed) {
 
           if(event.mouseButton.button == gf::MouseButton::Left) {
-            //if(!waitForAnswer && !pause) {
               // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
               if(state != State::Play) {
                 continue;
@@ -617,7 +616,6 @@ int main(int argc, char *argv[]) {
                   g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
                 }
               }
-            //}
           }
         }
       }
