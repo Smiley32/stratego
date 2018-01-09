@@ -701,7 +701,35 @@ int main(int argc, char *argv[]) {
               break;
             }
 
-            Piece firstPiece;
+            gf::Vector2u firstCoords;
+            firstCoords.x = msg[2] % g.GridSize;
+            firstCoords.y = (int)(msg[2] / g.GridSize);
+
+            gf::Vector2u lastCoords;
+            lastCoords.x = msg[3] % g.GridSize;
+            lastCoords.y = (int)(msg[3] / g.GridSize);
+
+            if(msg[1] == 0) {
+              // Si le serveur indique qu'il n'y a pas eu de collision
+              // On peut alors effectuer le mouvement sans problème
+              if(!g.movePieceTo(firstCoords, lastCoords)) {
+                state = State::FatalError;
+              }
+            } else {
+              // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
+              
+              // lastPieceBefore -> la valeur de la pièce ennemie
+              Piece lastPieceBefore;
+              lastPieceBefore.rank = (Rank)( msg[4] );
+              lastPieceBefore.side = Side::Blue;
+              int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
+              
+              if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win)) {
+                state = State::FatalError;
+              }
+            }
+
+            /*Piece firstPiece;
             gf::Vector2u firstCoords;
 
             firstCoords.x = msg[1] % g.GridSize;
@@ -739,7 +767,7 @@ int main(int argc, char *argv[]) {
 
             if(!g.makeUpdate(firstCoords, firstPiece, lastCoords, lastPiece)) {
               state = State::FatalError; // Une erreur est survenue lors de l'update
-            }
+            }*/
             break;
           default:
             break;

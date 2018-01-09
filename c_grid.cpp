@@ -268,19 +268,30 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
   return false;
 }
 
-bool Grid::makeUpdate(gf::Vector2u firstCoords, Piece firstPiece, gf::Vector2u lastCoords, Piece lastPiece) {
-  // TODO: vérifications de firstCoords et lastCoords
-  updateFirstCoords = firstCoords;
-  updateFirstPiece = firstPiece;
-  updateLastCoords = lastCoords;
-  updateLastPiece = lastPiece;
-
-  if(discoverPiece(firstCoords, firstPiece.rank)) {
-    return movePieceTo(firstCoords, lastCoords);
-  } else {
-    std::cout << "Erreur : makeUpdate" << std::endl;
+bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win) {
+  // TODO: verifs des coords
+  
+  // Decouverte de la pièce ennemie
+  if(!discoverPiece(lastCoords, lastPieceBefore.rank)) {
     return false;
   }
+
+  updateFirstPiece = grid[firstCoords.x][firstCoords.y];
+
+  // Calcul de la pièce restante
+  if(win == 1) {
+    // Victoire
+    updateLastPiece = updateFirstPiece;
+  } else if(win == 0) {
+    // Défaite
+    updateLastPiece = lastPieceBefore;
+  } else {
+    // Egalite
+    updateLastPiece.rank = Rank::Empty;
+    updateLastPiece.side = Side::Other;
+  }
+
+  return movePieceTo(firstCoords, lastCoords);
 }
 
 bool Grid::movePieceTo(gf::Vector2u first, gf::Vector2u last) {
