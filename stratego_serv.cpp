@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
     int piece_pos;
     int spiece_pos;
     int piece_value;
+    int p_value;
     bool r_rdy = false;
     bool b_rdy = false;
     bool accepted;
@@ -243,7 +244,7 @@ int main(int argc, char *argv[])
 
         get_vector_coord(&coo2D, piece_pos, true);
         get_vector_coord(&scoo2D, spiece_pos, true);
-        p_value = our_grid.get_value(coo2D)
+        p_value = our_grid.get_value(coo2D);
         accepted = our_grid.move_piece(coo2D, scoo2D);
 
         if (accepted)
