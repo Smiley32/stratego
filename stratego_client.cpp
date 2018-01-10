@@ -79,7 +79,19 @@ enum class State {
   FatalError,
   WaitUpdateAnswer,
   WaitUpdateAfterAnswer,
-  Play
+  Play,
+  Exit,
+  Connexion,
+  Connected,
+  Placing,
+  PlacingOver
+};
+
+enum class CustomError {
+  None,
+  NotFinished,
+  Refused,
+  WrongPlacing
 };
 
 // Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
@@ -132,7 +144,14 @@ void reception_thread(char *ip, char *port) {
     }
 }
 
-void escFct(gf::RenderWindow &renderer, gf::UI &ui, gf::Window &window) {
+/**
+ * Affiche la fenetre de 'pause' (quand on appuie sur ESC)
+ * 
+ * @return bool true si l'utilisateur a demandé à quitter
+ */
+bool escFct(gf::RenderWindow &renderer, gf::UI &ui) {
+  bool ret = false;
+
   // Afficher la fenêtre d'UI
   if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
@@ -143,18 +162,77 @@ void escFct(gf::RenderWindow &renderer, gf::UI &ui, gf::Window &window) {
       Packet p;
       p.append(6); // Le client quitte
       send_packet(p);
-      window.close();
+      // window.close();
+      ret = true;
     }
   }
 
   ui.end();
 
   renderer.draw(ui);
+
+  return ret;
+}
+
+/**
+ * Affiche les UIs nécessaires en fonction de la valeur de state
+ * 
+ * @return bool true si l'utilisateur a demandé à quitter
+ */
+bool displayStateUi(gf::RenderWindow &renderer, gf::UI &ui, State state) {
+  bool ret = false;
+
+  if(state == State::WaitAnswer) {
+    if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+      ui.layoutRowDynamic(25, 1);
+
+      ui.label("Attente de la confirmation du serveur");
+    }
+
+    ui.end();
+    renderer.draw(ui);
+  }
+
+  if(state == State::WaitUpdate || state == State::WaitPlayer) {
+    if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+      ui.layoutRowDynamic(25, 1);
+
+      if(state == State::WaitPlayer) {
+        ui.label("Attente de l'autre joueur");
+      } else {
+        ui.label("Votre adversaire joue");
+      }
+    }
+
+    ui.end();
+    renderer.draw(ui);
+  }
+
+  if(state == State::FatalError) {
+    // Afficher la fenêtre d'UI
+    if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+      ui.layoutRowDynamic(25, 1);
+
+      ui.label("Le serveur a rencontré une erreur");
+
+      if(ui.buttonLabel("OK (quitter)")) {
+        ret = true;
+      }
+    }
+
+    ui.end();
+    renderer.draw(ui);
+  }
+
+  return ret;
 }
 
 int main(int argc, char *argv[]) {
 
-  srand (time(NULL));
+  srand(time(NULL));
 
   // Initialisation
   static constexpr gf::Vector2u ScreenSize(768, 700);
@@ -203,6 +281,16 @@ int main(int argc, char *argv[]) {
 
   gf::UI ui(font);
 
+  State state = State::Connexion;
+
+  /******************************************************************/
+  /***
+  /***
+  /***             1 ERE BOUCLE DE JEU
+  /***
+  /***
+  /******************************************************************/
+
   static char servIp[16];
   static std::size_t servIpLength;
   static char servPort[6];
@@ -213,8 +301,7 @@ int main(int argc, char *argv[]) {
   bool error = false;
 
   // Première boucle : sélection du serveur
-  bool servSelected = false;
-  while(!servSelected) {
+  while(state != State::Connected && window.isOpen()) {
     gf::Event event;
 
     while(window.pollEvent(event)) {
@@ -223,8 +310,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(closeWindowAction.isActive()) {
-      servSelected = true;
-      window.close();
+      state = State::Exit;
     }
 
     if(escAction.isActive()) {
@@ -250,8 +336,7 @@ int main(int argc, char *argv[]) {
         ui.layoutRowDynamic(25, 1);
 
         if(ui.buttonLabel("Quitter")) {
-          window.close();
-          servSelected = true;
+          state = State::Exit;
         }
       }
 
@@ -282,12 +367,10 @@ int main(int argc, char *argv[]) {
 
           rt.detach();
 
-          servSelected = true;
+          state = State::Connected;
 
         } catch(std::exception &e) {
-          std::cout << e.what() << std::endl;
-
-          error = true;
+          state = State::FatalError;
         }
       }
 
@@ -297,17 +380,21 @@ int main(int argc, char *argv[]) {
     }
     ui.end();
 
+    if(state == State::Exit) {
+      window.close();
+    }
+
     renderer.draw(ui);
 
     renderer.display();
   }
 
-  if(!window.isOpen()) {
+  if(state == State::Exit || state == State::FatalError) {
     return 0;
   }
 
   servIp[servIpLength] = '\0';
-  std::cout << "serv ip : " << servIp << "(" << servIpLength << ")" << " port : " << servPort << std::endl;
+  // std::cout << "serv ip : " << servIp << "(" << servIpLength << ")" << " port : " << servPort << std::endl;
 
   displayEscUi = false;
   escPressed = false;
@@ -322,17 +409,22 @@ int main(int argc, char *argv[]) {
   placementAleatoireAction.setInstantaneous();
   actions.addAction(placementAleatoireAction);
 
+  /******************************************************************/
+  /***
+  /***
+  /***             2 EME BOUCLE DE JEU
+  /***
+  /***
+  /******************************************************************/
+
+  state = State::Placing;
+
   // Erreur de placement des pièces (-1 si aucune)
-  int errorNb = -1;
+  CustomError customError = CustomError::None;
 
-  bool fatalError = false;
+  bool uiOpen = false; // Pour que si une fenêtre est ouverte, on ne puisse pas cliquer autre part
 
-  bool waitForAnswer = false;
-
-  bool uiOpen = false; // Pour que si une fenêtre est ouverte, on ne puisse pas cliquer autre parts
-
-  bool setupFinished = false;
-  while(window.isOpen() && !setupFinished) {
+  while(window.isOpen() && state != State::PlacingOver) {
       gf::Event event;
 
       // Entrées
@@ -344,7 +436,7 @@ int main(int argc, char *argv[]) {
           s.updateMouseCoords(event.mouseCursor.coords);
         }
 
-        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer && !displayEscUi) {
+        if(event.type == gf::EventType::MouseButtonPressed && state == State::Placing && !displayEscUi) {
 
           // Clic gauche : choisir une pièce
           if(event.mouseButton.button == gf::MouseButton::Left) {
@@ -423,7 +515,7 @@ int main(int argc, char *argv[]) {
         Packet p;
         p.append(6); // Le client quitte
         send_packet(p);
-        window.close();
+        state = State::Exit;
       }
 
       if(escAction.isActive()) {
@@ -452,7 +544,7 @@ int main(int argc, char *argv[]) {
         // On appuie sur entrer pour envoyer les pièces au serveur
         if(!s.isEmpty()) {
           // Il reste des pièces à placer
-          errorNb = 1;
+          customError = CustomError::NotFinished;
         } else {
           // Envoi des pièces au serveur
           Packet p;
@@ -477,7 +569,7 @@ int main(int argc, char *argv[]) {
           send_packet(p);
 
           // On attend maintenant la réponse :
-          waitForAnswer = true;
+          state = State::WaitAnswer;
         }
       }
 
@@ -499,19 +591,19 @@ int main(int argc, char *argv[]) {
         switch(msg[0]) { // Type du message
           case -1:
             // Erreur provenant du serveur
-            fatalError = true;
+            state = State::FatalError;
             break;
           case 0: // Acceptation du serveur
-            if(!waitForAnswer) {
+            if(state != State::WaitAnswer) {
               if(!msg[1]) {
-                errorNb = 2;
+                customError = CustomError::Refused;
               }
             } else {
               if(!msg[1]) {
-                waitForAnswer = false;
-                errorNb = 3;
+                state = State::Placing;
+                customError = CustomError::WrongPlacing;
               } else {
-                setupFinished = true;
+                state = State::PlacingOver;
               }
             }
             break;
@@ -521,7 +613,7 @@ int main(int argc, char *argv[]) {
       }
 
       // UI
-      if(fatalError) {
+      if(state == State::FatalError) {
         // Afficher la fenêtre d'UI
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
@@ -540,7 +632,10 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(displayEscUi) {
-        escFct(renderer, ui, window);
+        if(escFct(renderer, ui)) {
+          // Il va falloir quitter
+          state = State::Exit;
+        }
         /*// Afficher la fenêtre d'UI
         if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
@@ -560,19 +655,19 @@ int main(int argc, char *argv[]) {
         renderer.draw(ui);*/
       }
 
-      if(errorNb != -1) {
+      if(customError != CustomError::None) {
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);
 
-          switch(errorNb) {
-            case 1:
+          switch(customError) {
+            case CustomError::NotFinished:
               ui.label("Il reste des pièces à placer");
               break;
-            case 2:
+            case CustomError::Refused:
               ui.label("Vous avez été refusé par le serveur");
               break;
-            case 3:
+            case CustomError::WrongPlacing:
               ui.label("Le placement des pièces est incorrect");
               break;
             default:
@@ -581,7 +676,7 @@ int main(int argc, char *argv[]) {
           }
 
           if(ui.buttonLabel("OK")) {
-            errorNb = -1;
+            customError = CustomError::None;
           }
 
           ui.end();
@@ -590,12 +685,30 @@ int main(int argc, char *argv[]) {
         }
       }
 
+      if(displayStateUi(renderer, ui, state)) {
+        state = State::Exit;
+      }
+
+      if(state == State::Exit) {
+        window.close();
+      }
+
       renderer.display();
   }
 
-  std::cout << "Salut !" << std::endl;
+  if(state == State::Exit || state == State::FatalError) {
+    return 0;
+  }
 
-  State state = State::WaitPlayer;
+  /******************************************************************/
+  /***
+  /***
+  /***             3 EME BOUCLE DE JEU
+  /***
+  /***
+  /******************************************************************/
+
+  state = State::WaitPlayer;
 
   bool waitForPlayer = true;
   bool pause = true;
@@ -605,227 +718,151 @@ int main(int argc, char *argv[]) {
   while(window.isOpen()) {
     gf::Event event;
 
-      // Entrées
-      while(window.pollEvent(event)) {
-        actions.processEvent(event);
-        ui.processEvent(event);
+    // Entrées
+    while(window.pollEvent(event)) {
+      actions.processEvent(event);
+      ui.processEvent(event);
 
-        if(event.type == gf::EventType::MouseButtonPressed) {
+      if(event.type == gf::EventType::MouseButtonPressed) {
 
-          if(event.mouseButton.button == gf::MouseButton::Left) {
-              // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
-              if(state != State::Play) {
-                continue;
+        if(event.mouseButton.button == gf::MouseButton::Left) {
+            // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
+            if(state != State::Play) {
+              continue;
+            }
+
+            std::cout << "clic !" << std::endl;
+            gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+            if(coords.x != -1 && coords.y != -1) {
+              if(g.isSelected()) {
+                // if(g.moveSelectedPieceTo(coords)) {
+                  // Envoi au serveur du mouvement
+                  Packet p;
+                  p.append(3);
+                  // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
+                  p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
+                  p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
+                  send_packet(p);
+                  
+                  state = State::WaitUpdateAnswer;
+                // }
+              } else {
+                g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
               }
+            }
+        }
+      }
+    }
 
-              std::cout << "clic !" << std::endl;
-              gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
-              if(coords.x != -1 && coords.y != -1) {
-                if(g.isSelected()) {
-                  // if(g.moveSelectedPieceTo(coords)) {
-                    // Envoi au serveur du mouvement
-                    Packet p;
-                    p.append(3);
-                    // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
-                    p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
-                    p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
-                    send_packet(p);
-                    
-                    state = State::WaitUpdateAnswer;
-                  // }
-                } else {
-                  g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
-                }
-              }
+    if(closeWindowAction.isActive() && state != State::FatalError) {
+      // Envoi d'un message de déconnexion au serveur
+      Packet p;
+      p.append(6); // Le client quitte
+      send_packet(p);
+      window.close();
+    }
+
+    if(escAction.isActive()) {
+      if(!escPressed) {
+        displayEscUi = !displayEscUi;
+      }
+      escPressed = true;
+    } else {
+      escPressed = false;
+    }
+
+    // Update
+    gf::Time time = clock.restart();
+    g.update(time);
+    // entities.update(time);
+
+    // Draw
+    renderer.clear();
+    entities.render(renderer);
+
+    // Réception des messages
+    boost::array<char, 128> msg;
+    bool msgLu = messages.poll(msg);
+
+    if(msgLu && state != State::FatalError) {
+      std::cout << "Message lu : " << (int)msg[0] << std::endl;
+      switch(msg[0]) { // Type du message
+        case -1:
+          // Erreur provenant du serveur
+          state = State::FatalError;
+          break;
+        case 0: // Acceptation du serveur
+          if(!msg[1]) {
+            // Le mouvement n'a pas été accepté
+            state = State::FatalError;
+          } else if(state == State::WaitAnswer) {
+            state = State::WaitUpdate;
+          } else if(state == State::WaitUpdateAnswer) {
+            state = State::WaitUpdateAfterAnswer;
           }
-        }
-      }
-
-      if(closeWindowAction.isActive() && state != State::FatalError) {
-        // Envoi d'un message de déconnexion au serveur
-        Packet p;
-        p.append(6); // Le client quitte
-        send_packet(p);
-        window.close();
-      }
-
-      if(escAction.isActive()) {
-        if(!escPressed) {
-          displayEscUi = !displayEscUi;
-        }
-        escPressed = true;
-      } else {
-        escPressed = false;
-      }
-
-      // Update
-      gf::Time time = clock.restart();
-      g.update(time);
-      // entities.update(time);
-
-      // Draw
-      renderer.clear();
-      entities.render(renderer);
-
-      // Réception des messages
-      boost::array<char, 128> msg;
-      bool msgLu = messages.poll(msg);
-
-      if(msgLu && state != State::FatalError) {
-        std::cout << "Message lu : " << (int)msg[0] << std::endl;
-        switch(msg[0]) { // Type du message
-          case -1:
-            // Erreur provenant du serveur
+          break;
+        case 2: // Jouer
+          if(state == State::WaitPlayer) {
+            state = State::WaitUpdate;
+          } else {
+            state = State::Play;
+          }
+          break;
+        case 4: // Update
+          if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
             state = State::FatalError;
             break;
-          case 0: // Acceptation du serveur
-            if(!msg[1]) {
-              // Le mouvement n'a pas été accepté
+          }
+
+          gf::Vector2u firstCoords;
+          firstCoords.x = msg[2] % g.GridSize;
+          firstCoords.y = (int)(msg[2] / g.GridSize);
+
+          gf::Vector2u lastCoords;
+          lastCoords.x = msg[3] % g.GridSize;
+          lastCoords.y = (int)(msg[3] / g.GridSize);
+
+          if(msg[1] == 0) {
+            // Si le serveur indique qu'il n'y a pas eu de collision
+            // On peut alors effectuer le mouvement sans problème
+            if(!g.movePieceTo(firstCoords, lastCoords)) {
               state = State::FatalError;
-            } else if(state == State::WaitAnswer) {
-              state = State::WaitUpdate;
-            } else if(state == State::WaitUpdateAnswer) {
-              state = State::WaitUpdateAfterAnswer;
             }
-            break;
-          case 2: // Jouer
-            if(state == State::WaitPlayer) {
-              state = State::WaitUpdate;
-            } else {
-              state = State::Play;
-            }
-            break;
-          case 4: // Update
-            if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
-              state = State::FatalError;
-              break;
-            }
-
-            gf::Vector2u firstCoords;
-            firstCoords.x = msg[2] % g.GridSize;
-            firstCoords.y = (int)(msg[2] / g.GridSize);
-
-            gf::Vector2u lastCoords;
-            lastCoords.x = msg[3] % g.GridSize;
-            lastCoords.y = (int)(msg[3] / g.GridSize);
-
-            if(msg[1] == 0) {
-              // Si le serveur indique qu'il n'y a pas eu de collision
-              // On peut alors effectuer le mouvement sans problème
-              if(!g.movePieceTo(firstCoords, lastCoords)) {
-                state = State::FatalError;
-              }
-            } else {
-              // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
-              
-              // lastPieceBefore -> la valeur de la pièce ennemie
-              Piece lastPieceBefore;
-              lastPieceBefore.rank = (Rank)( msg[4] );
-              lastPieceBefore.side = Side::Blue;
-              int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
-              
-              if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win)) {
-                state = State::FatalError;
-              }
-            }
-
-            /*Piece firstPiece;
-            gf::Vector2u firstCoords;
-
-            firstCoords.x = msg[1] % g.GridSize;
-            firstCoords.y = (int)(msg[1] / g.GridSize);
-            if(state == State::WaitUpdateAfterAnswer) {
-              firstCoords.x = g.GridSize - 1 - firstCoords.x;
-              firstCoords.y = g.GridSize - 1 - firstCoords.y;
-            }
-            std::cout << "Valeur : " << (int)msg[2] << std::endl;
-            firstPiece.rank = (Rank)msg[2];
-            firstPiece.side = state == State::WaitUpdate ? Side::Blue : Side::Red;
-
-            Piece lastPiece;
-            gf::Vector2u lastCoords;
-            lastCoords.x = msg[3] % g.GridSize;
-            lastCoords.y = (int)(msg[3] / g.GridSize);
-            if(state == State::WaitUpdateAfterAnswer) {
-              lastCoords.x = g.GridSize - 1 - lastCoords.x;
-              lastCoords.y = g.GridSize - 1 - lastCoords.y;
-            }
-            std::cout << "Coords (first) : " << firstCoords.x << " ; " << firstCoords.y << std::endl;
-            std::cout << "Coords (last) : " << lastCoords.x << " ; " << lastCoords.y << std::endl;
-            lastPiece.rank = (Rank)msg[4];
-            if(lastPiece.rank == Rank::Empty) {
-              // Il y a eu égalité donc la case est vide
-              lastPiece.side = Side::Other;
-            } else if(lastPiece.rank == firstPiece.rank) {
-              // Le rang de la pièce est inchangé
-              lastPiece.side = state == State::WaitUpdate ? Side::Blue : Side::Red;
-            } else {
-              lastPiece.side = state == State::WaitUpdate ? Side::Red : Side::Blue;
-            }
-
-            state = State::WaitPlayer;
-
-            if(!g.makeUpdate(firstCoords, firstPiece, lastCoords, lastPiece)) {
-              state = State::FatalError; // Une erreur est survenue lors de l'update
-            }*/
-            break;
-          default:
-            break;
-        }
-      }
-
-      // UI
-      if(state == State::WaitUpdate || state == State::WaitPlayer) {
-        if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
-
-          ui.layoutRowDynamic(25, 1);
-
-          if(state == State::WaitPlayer) {
-            ui.label("Attente de l'autre joueur");
           } else {
-            ui.label("Votre adversaire joue");
+            // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
+            
+            // lastPieceBefore -> la valeur de la pièce ennemie
+            Piece lastPieceBefore;
+            lastPieceBefore.rank = (Rank)( msg[4] );
+            lastPieceBefore.side = Side::Blue;
+            int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
+            
+            if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win)) {
+              state = State::FatalError;
+            }
           }
-        }
-
-        ui.end();
-        renderer.draw(ui);
+          break;
+        default:
+          break;
       }
+    }
 
-      if(state == State::FatalError) {
-        // Afficher la fenêtre d'UI
-        if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
-
-          ui.layoutRowDynamic(25, 1);
-
-          ui.label("Le serveur a rencontré une erreur");
-
-          if(ui.buttonLabel("OK (quitter)")) {
-            window.close();
-          }
-        }
-
-        ui.end();
-        renderer.draw(ui);
-      } else if(displayEscUi) { // Menu ESC
-        // Afficher la fenêtre d'UI
-        if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
-
-          ui.layoutRowDynamic(25, 1);
-
-          if(ui.buttonLabel("Quitter")) {
-            // Envoi d'un message de déconnexion au serveur
-            Packet p;
-            p.append(6); // Le client quitte
-            send_packet(p);
-            window.close();
-          }
-        }
-
-        ui.end();
-        renderer.draw(ui);
+    // UI
+    if(displayEscUi) {
+      if(escFct(renderer, ui)) {
+        state = State::Exit;
       }
+    }
 
-      renderer.display();
+    if(displayStateUi(renderer, ui, state)) {
+      state = State::Exit;
+    }
+
+    if(state == State::Exit) {
+      window.close();
+    }
+
+    renderer.display();
   }
 
   return 0;
