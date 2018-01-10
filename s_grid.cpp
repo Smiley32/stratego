@@ -265,6 +265,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
   // Cas d'une attaque entre 2 pièces
   if (grid[dest.x][dest.y].side != grid[source.x][source.y].side && grid[dest.x][dest.y].side != Side::Other)
   {
+    collision = true;
     // Cas de l'espion qui attaque maréchal
     if ((int) grid[source.x][source.y].rank == 10 && (int) grid[dest.x][dest.y].rank == 1)
     {
@@ -326,6 +327,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
   // Cas d'un déplacement sur une case vide
   if ((int) grid[dest.x][dest.y].rank == 13)
   {
+    collision = false;
     tmp = grid[source.x][source.y];
     grid[source.x][source.y] = grid[dest.x][dest.y];
     grid[dest.x][dest.y] = grid[source.x][source.y];
@@ -341,4 +343,9 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
 bool s_grid::game_is_end()
 {
   return is_end;
+}
+
+bool s_grid::had_collision()
+{
+  return collision;
 }

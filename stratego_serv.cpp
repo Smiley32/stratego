@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
     int spiece_pos;
     int piece_value;
     int p_value;
+    int sp_value;
     bool r_rdy = false;
     bool b_rdy = false;
     bool accepted;
@@ -245,6 +246,7 @@ int main(int argc, char *argv[])
         get_vector_coord(&coo2D, piece_pos, true);
         get_vector_coord(&scoo2D, spiece_pos, true);
         p_value = our_grid.get_value(coo2D);
+        sp_value = our_grid.get_value(scoo2D);
         accepted = our_grid.move_piece(coo2D, scoo2D);
 
         if (accepted)
@@ -265,28 +267,85 @@ int main(int argc, char *argv[])
 
       // Envoie update premier client
       p.append(4);
-      p.append(get_pos_from_vector(&coo2D, true));
-      p.append(our_grid.get_value(coo2D));
-      p.append(get_pos_from_vector(&scoo2D, true));
-      p.append(our_grid.get_value(scoo2D));
+
+      if (our_grid.had_collision())
+      {
+        p.append(1);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(sp_value);
+
+        if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
+        {
+          p.append(2);
+        }
+        else
+        {
+          if (sp_value == our_grid.get_value(scoo2D))
+          {
+            p.append(0);
+          }
+          else
+          {
+            p.append(1);
+          }
+        }
+      }
+      else
+      {
+        p.append(0);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+      }
+
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
       // Envoi update deuxième client
       p.append(4);
-      p.append(get_pos_from_vector(&coo2D, false));
-      p.append(our_grid.get_value(coo2D));
-      p.append(get_pos_from_vector(&scoo2D, false));
-      p.append(our_grid.get_value(scoo2D));
+
+      if (our_grid.had_collision())
+      {
+        p.append(1);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(p_value);
+
+        if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
+        {
+          p.append(2);
+        }
+        else
+        {
+          if (sp_value == our_grid.get_value(scoo2D))
+          {
+            p.append(1);
+          }
+          else
+          {
+            p.append(0);
+          }
+        }
+      }
+      else
+      {
+        p.append(0);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+      }
+
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
       if (our_grid.game_is_end())
       {
+        // Envoi signal de fin premier client
         p.append(5);
         p.append(1);
         boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
         p.clear();
+
+        // Envoi signal de fin deuxième client
         p.append(5);
         p.append(0);
         boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -338,19 +397,73 @@ int main(int argc, char *argv[])
 
       // Envoie update premier client
       p.append(4);
-      p.append(get_pos_from_vector(&coo2D, true));
-      p.append(our_grid.get_value(coo2D));
-      p.append(get_pos_from_vector(&scoo2D, true));
-      p.append(our_grid.get_value(scoo2D));
+
+      if (our_grid.had_collision())
+      {
+        p.append(1);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(sp_value);
+
+        if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
+        {
+          p.append(2);
+        }
+        else
+        {
+          if (p_value == our_grid.get_value(coo2D))
+          {
+            p.append(1);
+          }
+          else
+          {
+            p.append(0);
+          }
+        }
+      }
+      else
+      {
+        p.append(0);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+      }
+
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
       // Envoi update deuxième client
       p.append(4);
-      p.append(get_pos_from_vector(&coo2D, false));
-      p.append(our_grid.get_value(coo2D));
-      p.append(get_pos_from_vector(&scoo2D, false));
-      p.append(our_grid.get_value(scoo2D));
+
+      if (our_grid.had_collision())
+      {
+        p.append(1);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(p_value);
+
+        if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
+        {
+          p.append(2);
+        }
+        else
+        {
+          if (p_value == our_grid.get_value(scoo2D))
+          {
+            p.append(1);
+          }
+          else
+          {
+            p.append(0);
+          }
+        }
+      }
+      else
+      {
+        p.append(0);
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
+      }
+
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
