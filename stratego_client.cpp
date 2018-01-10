@@ -132,6 +132,26 @@ void reception_thread(char *ip, char *port) {
     }
 }
 
+void escFct(gf::RenderWindow &renderer, gf::UI &ui, gf::Window &window) {
+  // Afficher la fenêtre d'UI
+  if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+
+    ui.layoutRowDynamic(25, 1);
+
+    if(ui.buttonLabel("Quitter")) {
+      // Envoi d'un message de déconnexion au serveur
+      Packet p;
+      p.append(6); // Le client quitte
+      send_packet(p);
+      window.close();
+    }
+  }
+
+  ui.end();
+
+  renderer.draw(ui);
+}
+
 int main(int argc, char *argv[]) {
 
   srand (time(NULL));
@@ -324,7 +344,7 @@ int main(int argc, char *argv[]) {
           s.updateMouseCoords(event.mouseCursor.coords);
         }
 
-        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer) {
+        if(event.type == gf::EventType::MouseButtonPressed && !waitForAnswer && !displayEscUi) {
 
           // Clic gauche : choisir une pièce
           if(event.mouseButton.button == gf::MouseButton::Left) {
@@ -520,7 +540,8 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(displayEscUi) {
-        // Afficher la fenêtre d'UI
+        escFct(renderer, ui, window);
+        /*// Afficher la fenêtre d'UI
         if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);
@@ -536,7 +557,7 @@ int main(int argc, char *argv[]) {
 
         ui.end();
 
-        renderer.draw(ui);
+        renderer.draw(ui);*/
       }
 
       if(errorNb != -1) {
@@ -592,7 +613,6 @@ int main(int argc, char *argv[]) {
         if(event.type == gf::EventType::MouseButtonPressed) {
 
           if(event.mouseButton.button == gf::MouseButton::Left) {
-            //if(!waitForAnswer && !pause) {
               // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
               if(state != State::Play) {
                 continue;
@@ -617,7 +637,6 @@ int main(int argc, char *argv[]) {
                   g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
                 }
               }
-            //}
           }
         }
       }
@@ -682,7 +701,35 @@ int main(int argc, char *argv[]) {
               break;
             }
 
-            Piece firstPiece;
+            gf::Vector2u firstCoords;
+            firstCoords.x = msg[2] % g.GridSize;
+            firstCoords.y = (int)(msg[2] / g.GridSize);
+
+            gf::Vector2u lastCoords;
+            lastCoords.x = msg[3] % g.GridSize;
+            lastCoords.y = (int)(msg[3] / g.GridSize);
+
+            if(msg[1] == 0) {
+              // Si le serveur indique qu'il n'y a pas eu de collision
+              // On peut alors effectuer le mouvement sans problème
+              if(!g.movePieceTo(firstCoords, lastCoords)) {
+                state = State::FatalError;
+              }
+            } else {
+              // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
+              
+              // lastPieceBefore -> la valeur de la pièce ennemie
+              Piece lastPieceBefore;
+              lastPieceBefore.rank = (Rank)( msg[4] );
+              lastPieceBefore.side = Side::Blue;
+              int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
+              
+              if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win)) {
+                state = State::FatalError;
+              }
+            }
+
+            /*Piece firstPiece;
             gf::Vector2u firstCoords;
 
             firstCoords.x = msg[1] % g.GridSize;
@@ -720,7 +767,7 @@ int main(int argc, char *argv[]) {
 
             if(!g.makeUpdate(firstCoords, firstPiece, lastCoords, lastPiece)) {
               state = State::FatalError; // Une erreur est survenue lors de l'update
-            }
+            }*/
             break;
           default:
             break;

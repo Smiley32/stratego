@@ -62,15 +62,16 @@ public:
   bool moveSelectedPieceTo(gf::Vector2u coords);
 
   /// Fais la mise à jour reçue par le serveur avec l'animation qui se doit
-  bool makeUpdate(gf::Vector2u firstCoords, Piece firstPiece, gf::Vector2u lastCoords, Piece lastPiece);
+  // bool makeUpdate(gf::Vector2u firstCoords, Piece firstPiece, gf::Vector2u lastCoords, Piece lastPiece);
+  bool makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win);
+
+  /// Bouge la pièce (en l'animant) de first à last
+  bool movePieceTo(gf::Vector2u first, gf::Vector2u last);
 
   /// Indique si une pièce est sélectionnée
   bool isSelected();
 
 private:
-  /// Bouge la pièce (en l'animant) de first à last
-  bool movePieceTo(gf::Vector2u first, gf::Vector2u last);
-
   /// Découvre une pièce ennemie (bleue)
   bool discoverPiece(gf::Vector2u coords, Rank r);
 
