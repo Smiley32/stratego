@@ -180,7 +180,7 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
       r = (int)grid[selected.x][selected.y].rank;
     }
     
-    gf::Sprite sprite(texture, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+    gf::Sprite sprite(*t, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
     sprite.setPosition(spritePos);
     target.draw(sprite, states);
     std::cout << "<" << r << "> affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
@@ -246,6 +246,23 @@ bool Grid::selectPiece(gf::Vector2u coords) {
 
   selected = coords;
   return true;
+}
+
+bool Grid::isValidMove(gf::Vector2u coords) {
+  if(!isSelected()) {
+    return false;
+  }
+
+  std::vector<gf::Vector2u> destinations = getDestinations(selected);
+
+  for(int i = 0; i < destinations.size(); i++) {
+    std::cout << destinations[i].x << " - " << destinations[i].y << std::endl;
+    if(coords.x == destinations[i].x && coords.y == destinations[i].y) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {

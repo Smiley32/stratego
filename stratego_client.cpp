@@ -739,7 +739,8 @@ int main(int argc, char *argv[]) {
             std::cout << "clic !" << std::endl;
             gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
             if(coords.x != -1 && coords.y != -1) {
-              if(g.isSelected()) {
+              if(g.isValidMove(coords)) {
+                // TODO: verif du mouvement
                 // if(g.moveSelectedPieceTo(coords)) {
                   // Envoi au serveur du mouvement
                   Packet p;
@@ -852,6 +853,8 @@ int main(int argc, char *argv[]) {
               state = State::FatalError;
             }
           }
+
+          g.selected = {-1, -1};
 
           break;
       }

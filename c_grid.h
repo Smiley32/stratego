@@ -71,6 +71,8 @@ public:
   /// Indique si une pièce est sélectionnée
   bool isSelected();
 
+  bool isValidMove(gf::Vector2u coords);
+
 private:
   /// Découvre une pièce ennemie (bleue)
   bool discoverPiece(gf::Vector2u coords, Rank r);
