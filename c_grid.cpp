@@ -144,7 +144,7 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
     for(unsigned y = 0; y < GridSize; y++) {
       // On n'affiche pas la pièce sélectionnée si on a commencé son animation
       if(animEnabled &&
-          ((updateFirstCoords.x != -1 && selected.x == x && selected.y == y) ||
+          ((updateFirstCoords.x == -1 && selected.x == x && selected.y == y) ||
            (updateFirstCoords.x == x && updateFirstCoords.y == y))) {
         continue;
       }
@@ -168,8 +168,14 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   // Animation de la pièce
   if(animEnabled) {
     int r;
+    gf::Texture *t;
     if(updateFirstCoords.x != -1) {
       r = (int)grid[updateFirstCoords.x][updateFirstCoords.y].rank;
+      if(grid[updateFirstCoords.x][updateFirstCoords.y].side == Side::Blue) {
+        t = &blueTexture;
+      } else {
+        t = &texture;
+      }
     } else {
       r = (int)grid[selected.x][selected.y].rank;
     }
@@ -270,6 +276,14 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
 
 bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win) {
   // TODO: verifs des coords
+
+  std::cout << firstCoords.x << ";" << firstCoords.y << ";" << lastCoords.x << ";" << lastCoords.y << ";" << (int)lastPieceBefore.rank << ";" << std::endl;
+
+  if(grid[firstCoords.x][firstCoords.y].side == Side::Blue) {
+    lastPieceBefore.side = Side::Red;
+  } else {
+    lastPieceBefore.side = Side::Blue;
+  }
   
   // Decouverte de la pièce ennemie
   if(!discoverPiece(lastCoords, lastPieceBefore.rank)) {
@@ -298,7 +312,12 @@ bool Grid::movePieceTo(gf::Vector2u first, gf::Vector2u last) {
   // TODO: vérifications de first et last
 
   updateFirstCoords = first;
+  updateFirstPiece = grid[first.x][first.y];
   updateLastCoords = last;
+  updateLastPiece = updateFirstPiece;
+
+
+  std::cout << updateFirstCoords.x << ";" << updateFirstCoords.y << ";" << updateLastCoords.x << ";" << updateLastCoords.y << ";" << (int)updateLastPiece.rank << ";" << std::endl;
 
   animEnabled = true;
   target = last;

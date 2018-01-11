@@ -84,7 +84,8 @@ enum class State {
   Connexion,
   Connected,
   Placing,
-  PlacingOver
+  PlacingOver,
+  WaitPlaySignal
 };
 
 enum class CustomError {
@@ -119,7 +120,11 @@ void reception_thread(char *ip, char *port) {
             length = 3;
             break;
           case 4:
-            length = 5;
+            if(msg[1]) {
+              length = 6;
+            } else {
+              length = 4;
+            }
             break;
           default:
             length = 1;
@@ -814,6 +819,12 @@ int main(int argc, char *argv[]) {
             break;
           }
 
+          if(state == State::WaitUpdate) {
+            state = State::WaitPlaySignal;
+          } else {
+            state = State::WaitUpdate;
+          }
+
           gf::Vector2u firstCoords;
           firstCoords.x = msg[2] % g.GridSize;
           firstCoords.y = (int)(msg[2] / g.GridSize);
@@ -834,13 +845,14 @@ int main(int argc, char *argv[]) {
             // lastPieceBefore -> la valeur de la pièce ennemie
             Piece lastPieceBefore;
             lastPieceBefore.rank = (Rank)( msg[4] );
-            lastPieceBefore.side = Side::Blue;
+            lastPieceBefore.side = Side::Other; // On ne sait pas : l'inverse de firstPiece
             int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
             
             if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win)) {
               state = State::FatalError;
             }
           }
+
           break;
       }
     }
