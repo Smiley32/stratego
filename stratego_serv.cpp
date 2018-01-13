@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
         p_value = our_grid.get_value(coo2D);
         sp_value = our_grid.get_value(scoo2D);
 
-        gf::Log::info("\nAsk for a moove from %d %d to %d %d, piece have value %d, target is %d\n", coo2D.x, coo2D.y, scoo2D.x, scoo2D.y,p_value, sp_value);
+        gf::Log::info("\nAsk for a moove from %d %d (team 1) to %d %d (team 2), piece have value %d, target is %d\n", coo2D.x, coo2D.y, scoo2D.x, scoo2D.y,p_value, sp_value);
         accepted = our_grid.move_piece(coo2D, scoo2D);
 
         if (accepted)
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
         get_vector_coord(&scoo2D, spiece_pos, false);
         p_value = our_grid.get_value(coo2D);
         sp_value = our_grid.get_value(scoo2D);
-        gf::Log::info("\nAsk for a moove from %d %d to %d %d, piece have value %d, target is %d\n", coo2D.x, coo2D.y, scoo2D.x, scoo2D.y,p_value, sp_value);
+        gf::Log::info("\nAsk for a moove from %d %d (team 2) to %d %d (team 1), piece have value %d, target is %d\n", coo2D.x, coo2D.y, scoo2D.x, scoo2D.y,p_value, sp_value);
         accepted = our_grid.move_piece(coo2D, scoo2D);
 
         if (accepted)
