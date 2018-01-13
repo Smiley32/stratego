@@ -294,7 +294,7 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
 bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win) {
   // TODO: verifs des coords
 
-  std::cout << firstCoords.x << ";" << firstCoords.y << ";" << lastCoords.x << ";" << lastCoords.y << ";" << (int)lastPieceBefore.rank << ";" << std::endl;
+  std::cout << "(" << firstCoords.x << ";" << firstCoords.y << ") (" << lastCoords.x << ";" << lastCoords.y << ") " << (int)lastPieceBefore.rank << ";" << win << std::endl;
 
   if(grid[firstCoords.x][firstCoords.y].side == Side::Blue) {
     lastPieceBefore.side = Side::Red;
@@ -304,6 +304,7 @@ bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece l
   
   // Decouverte de la pièce ennemie
   if(!discoverPiece(lastCoords, lastPieceBefore.rank)) {
+    std::cout << "discoverPiece a échoué" << std::endl;
     return false;
   }
 
@@ -351,6 +352,8 @@ bool Grid::discoverPiece(gf::Vector2u coords, Rank r) {
   // TODO: vérification de coords
 
   grid[coords.x][coords.y].rank = r;
+
+  return true;
 }
 
 bool Grid::isSelected() {
