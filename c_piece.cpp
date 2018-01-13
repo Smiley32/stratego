@@ -117,7 +117,7 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
     gf::Vector2u coords(x, 0);
     int r = (int)grid[x].rank;
 
-    // On affiche des cases vides si la pièce n'est plus dispo
+    // On affiche des cases vides si la pièce n'est plus disponible
     if(nbPieces[x] == 0) {
       r = (int)Rank::Empty;
     }

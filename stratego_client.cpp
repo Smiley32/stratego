@@ -130,7 +130,10 @@ void reception_thread(char *ip, char *port) {
             length = 1;
             break;
         }
-
+        for(size_t i = 0; i < length; i++) {
+          std::cout << (int)msg[i] << ";";
+        }
+        std::cout << std::endl;
         std::cout << "Ajout du message" << (int)msg[0] << std::endl;
         messages.push(msg);
 
@@ -596,6 +599,7 @@ int main(int argc, char *argv[]) {
         switch(msg[0]) { // Type du message
           case -1:
             // Erreur provenant du serveur
+            std::cout << "L'erreur vient du serveur" << std::endl;
             state = State::FatalError;
             break;
           case 0: // Acceptation du serveur
@@ -796,11 +800,13 @@ int main(int argc, char *argv[]) {
         case -1:
           // Erreur provenant du serveur
           state = State::FatalError;
+          std::cout << "L'erreur vient du serveur" << std::endl;
           break;
         case 0: // Acceptation du serveur
           if(!msg[1]) {
             // Le mouvement n'a pas été accepté
             state = State::FatalError;
+            std::cout << "Le mouvement a été refusé par le serveur" << std::endl;
           } else if(state == State::WaitAnswer) {
             state = State::WaitUpdate;
           } else if(state == State::WaitUpdateAnswer) {
@@ -817,6 +823,7 @@ int main(int argc, char *argv[]) {
         case 4: // Update
           if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
             state = State::FatalError;
+            std::cout << "Le message update est arrivé alors qu'il n'étais pas attendu" << std::endl;
             break;
           }
 
@@ -839,6 +846,7 @@ int main(int argc, char *argv[]) {
             // On peut alors effectuer le mouvement sans problème
             if(!g.movePieceTo(firstCoords, lastCoords)) {
               state = State::FatalError;
+              std::cout << "g.movePieceTo a échoué" << std::endl;
             }
           } else {
             // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
@@ -851,6 +859,7 @@ int main(int argc, char *argv[]) {
             
             if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win)) {
               state = State::FatalError;
+              std::cout << "g.makeUpdate a échoué" << std::endl;
             }
           }
 
