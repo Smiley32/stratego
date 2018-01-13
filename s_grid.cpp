@@ -156,7 +156,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
 {
   Piece tmp;
 
-  gf::Log::info("\n\tTry to move %d %d to %d %d, with piece %d\n", source.x, source.y, dest.x, dest.y, grid.get_value(source));
+  gf::Log::info("\n\tTry to move %d %d to %d %d, with piece %d\n", source.x, source.y, dest.x, dest.y, (int) grid[source.x][source.y].rank);
   // Vérifications coordonnées dans la carte
   if (source.x < 0 || source.y < 0 || source.x > size || source.y > size)
   {
@@ -173,7 +173,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
   // Vérification piece a le droit de bouger
   if ((int) grid[source.x][source.y].rank > 10 || (int) grid[source.x][source.y].rank == 0)
   {
-    gf::Log::error("\n\tError move_piece: This piece can't move, rank %d\n", grid.get_value(source));
+    gf::Log::error("\n\tError move_piece: This piece can't move, rank %d\n", (int) grid[source.x][source.y].rank);
     return false;
   }
 
