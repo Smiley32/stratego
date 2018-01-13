@@ -156,7 +156,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
 {
   Piece tmp;
 
-  gf::Log::info("\n\tTry to move %d %d to %d %d\n", source.x, source.y, dest.x, dest.y);
+  gf::Log::info("\n\tTry to move %d %d to %d %d, with piece %d\n", source.x, source.y, dest.x, dest.y, grid.get_value(source));
   // Vérifications coordonnées dans la carte
   if (source.x < 0 || source.y < 0 || source.x > size || source.y > size)
   {
@@ -173,7 +173,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
   // Vérification piece a le droit de bouger
   if ((int) grid[source.x][source.y].rank > 10 || (int) grid[source.x][source.y].rank == 0)
   {
-    gf::Log::error("\n\tError move_piece: This piece can't move\n");
+    gf::Log::error("\n\tError move_piece: This piece can't move, rank %d\n", grid.get_value(source));
     return false;
   }
 
@@ -183,7 +183,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
     // On vérifie juste que le déplacement est rectiligne
     if ( !(abs(source.x - dest.x) != 0 && abs(source.y - dest.y) == 0) && !(abs(source.x - dest.x) == 0 && abs(source.y - dest.y) != 0) )
     {
-      gf::Log::error("\n\tError move_piece: Invalid deplacement, must be straight\n");
+      gf::Log::error("\n\tError move_piece: Invalid deplacement, must be straight for only 1 compartment\n");
       return false;
     }
 
