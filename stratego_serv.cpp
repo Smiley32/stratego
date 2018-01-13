@@ -243,8 +243,8 @@ int main(int argc, char *argv[])
         piece_pos = (int) (buf[1]);
         spiece_pos = (int) (buf[2]);
 
-        get_vector_coord(&coo2D, piece_pos, true);
-        get_vector_coord(&scoo2D, spiece_pos, true);
+        get_vector_coord(&coo2D, piece_pos, false);
+        get_vector_coord(&scoo2D, spiece_pos, false);
         p_value = our_grid.get_value(coo2D);
         sp_value = our_grid.get_value(scoo2D);
         accepted = our_grid.move_piece(coo2D, scoo2D);
@@ -375,8 +375,8 @@ int main(int argc, char *argv[])
         piece_pos = (int) (buf[1]);
         spiece_pos = (int) (buf[2]);
 
-        get_vector_coord(&coo2D, piece_pos, false);
-        get_vector_coord(&scoo2D, spiece_pos, false);
+        get_vector_coord(&coo2D, piece_pos, true);
+        get_vector_coord(&scoo2D, spiece_pos, true);
         accepted = our_grid.move_piece(coo2D, scoo2D);
 
         if (accepted)
