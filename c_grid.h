@@ -66,7 +66,7 @@ public:
   bool makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win);
 
   /// Bouge la pièce (en l'animant) de first à last
-  bool movePieceTo(gf::Vector2u first, gf::Vector2u last);
+  bool movePieceTo(gf::Vector2u first, gf::Vector2u last, bool reasignPieces);
 
   /// Indique si une pièce est sélectionnée
   bool isSelected();

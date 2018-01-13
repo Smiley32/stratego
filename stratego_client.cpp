@@ -844,7 +844,7 @@ int main(int argc, char *argv[]) {
           if(msg[1] == 0) {
             // Si le serveur indique qu'il n'y a pas eu de collision
             // On peut alors effectuer le mouvement sans problème
-            if(!g.movePieceTo(firstCoords, lastCoords)) {
+            if(!g.movePieceTo(firstCoords, lastCoords, true)) {
               state = State::FatalError;
               std::cout << "g.movePieceTo a échoué" << std::endl;
             }

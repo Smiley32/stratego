@@ -294,46 +294,48 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
 bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win) {
   // TODO: verifs des coords
 
-  std::cout << "(" << firstCoords.x << ";" << firstCoords.y << ") (" << lastCoords.x << ";" << lastCoords.y << ") " << (int)lastPieceBefore.rank << ";" << win << std::endl;
+  std::cout << "...(" << firstCoords.x << ";" << firstCoords.y << ") (" << lastCoords.x << ";" << lastCoords.y << ") " << (int)lastPieceBefore.rank << ";" << win << "!" << std::endl;
 
-  if(grid[firstCoords.x][firstCoords.y].side == Side::Blue) {
-    lastPieceBefore.side = Side::Red;
-  } else {
-    lastPieceBefore.side = Side::Blue;
-  }
-  
+  updateFirstPiece = grid[firstCoords.x][firstCoords.y];
+
+  // lastPieceBefore.side = updateFirstPiece.side == Side::Blue ? Side::Red : Side::Blue;
+  lastPieceBefore.side = Side::Blue;
+
   // Decouverte de la pièce ennemie
-  if(!discoverPiece(lastCoords, lastPieceBefore.rank)) {
+  if(!discoverPiece(updateFirstPiece.side == Side::Blue ? firstCoords : lastCoords, lastPieceBefore.rank)) {
     std::cout << "discoverPiece a échoué" << std::endl;
     return false;
   }
 
-  updateFirstPiece = grid[firstCoords.x][firstCoords.y];
-
   // Calcul de la pièce restante
   if(win == 1) {
-    // Victoire
-    updateLastPiece = updateFirstPiece;
+    // Victoire -> la piece rouge gagne
+    std::cout << "Victoire !" << std::endl;
+    updateLastPiece = updateFirstPiece.side == Side::Blue ? grid[lastCoords.x][lastCoords.y] : updateFirstPiece;
   } else if(win == 0) {
-    // Défaite
+    // Défaite -> la piece bleue gagne
+    std::cout << "Défaite..." << std::endl;
     updateLastPiece = lastPieceBefore;
   } else {
     // Egalite
+    std::cout << "Egalité" << std::endl;
     updateLastPiece.rank = Rank::Empty;
     updateLastPiece.side = Side::Other;
   }
 
-  return movePieceTo(firstCoords, lastCoords);
+  return movePieceTo(firstCoords, lastCoords, false);
 }
 
-bool Grid::movePieceTo(gf::Vector2u first, gf::Vector2u last) {
+bool Grid::movePieceTo(gf::Vector2u first, gf::Vector2u last, bool reasignPieces) {
   // TODO: vérifications de first et last
 
   updateFirstCoords = first;
-  updateFirstPiece = grid[first.x][first.y];
   updateLastCoords = last;
-  updateLastPiece = updateFirstPiece;
 
+  if(reasignPieces) {
+    updateFirstPiece = grid[first.x][first.y];
+    updateLastPiece = updateFirstPiece;
+  }
 
   std::cout << updateFirstCoords.x << ";" << updateFirstCoords.y << ";" << updateLastCoords.x << ";" << updateLastCoords.y << ";" << (int)updateLastPiece.rank << ";" << std::endl;
 
