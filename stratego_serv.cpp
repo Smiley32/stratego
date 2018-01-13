@@ -271,8 +271,8 @@ int main(int argc, char *argv[])
       if (our_grid.had_collision())
       {
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(get_pos_from_vector(&coo2D, false));
+        p.append(get_pos_from_vector(&scoo2D, false));
         p.append(sp_value);
 
         if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
@@ -294,8 +294,8 @@ int main(int argc, char *argv[])
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(get_pos_from_vector(&coo2D, false));
+        p.append(get_pos_from_vector(&scoo2D, false));
       }
 
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -307,8 +307,8 @@ int main(int argc, char *argv[])
       if (our_grid.had_collision())
       {
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, false));
-        p.append(get_pos_from_vector(&scoo2D, false));
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
         p.append(p_value);
 
         if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
@@ -330,8 +330,8 @@ int main(int argc, char *argv[])
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, false);
-        p.append(get_pos_from_vector(&scoo2D, false));
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
       }
 
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -401,8 +401,8 @@ int main(int argc, char *argv[])
       if (our_grid.had_collision())
       {
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(get_pos_from_vector(&coo2D, false));
+        p.append(get_pos_from_vector(&scoo2D, false));
         p.append(sp_value);
 
         if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
@@ -424,8 +424,8 @@ int main(int argc, char *argv[])
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
+        p.append(get_pos_from_vector(&coo2D, false));
+        p.append(get_pos_from_vector(&scoo2D, false));
       }
 
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -437,8 +437,8 @@ int main(int argc, char *argv[])
       if (our_grid.had_collision())
       {
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, false));
-        p.append(get_pos_from_vector(&scoo2D, false));
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
         p.append(p_value);
 
         if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
@@ -460,8 +460,8 @@ int main(int argc, char *argv[])
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, false));
-        p.append(get_pos_from_vector(&scoo2D, false));
+        p.append(get_pos_from_vector(&coo2D, true));
+        p.append(get_pos_from_vector(&scoo2D, true));
       }
 
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
