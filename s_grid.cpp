@@ -330,7 +330,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
     collision = false;
     tmp = grid[source.x][source.y];
     grid[source.x][source.y] = grid[dest.x][dest.y];
-    grid[dest.x][dest.y] = grid[source.x][source.y];
+    grid[dest.x][dest.y] = tmp;
 
     return true;
   }
