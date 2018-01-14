@@ -377,10 +377,10 @@ std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
     {
       // Le scout peut bouger d'autant qu'il veut en ligne, sans passer au dessus des autres pièces
       // Parcours des cases autour
-      unsigned int x = (unsigned)(coords.x - 1);
+      int x = coords.x - 1;
       while(x >= 0) {
         if(grid[x][coords.y].rank == Rank::Empty || grid[x][coords.y].side == Side::Blue) {
-          destinations.push_back({x, (unsigned)coords.y});
+          destinations.push_back({(unsigned)x, (unsigned)coords.y});
         }
         
         if(grid[x][coords.y].rank != Rank::Empty || grid[x][coords.y].side == Side::Blue) {
@@ -393,7 +393,7 @@ std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
       x = coords.x + 1;
       while(x < GridSize) {
         if(grid[x][coords.y].rank == Rank::Empty || grid[x][coords.y].side == Side::Blue) {
-          destinations.push_back({x, (unsigned)coords.y});
+          destinations.push_back({(unsigned)x, (unsigned)coords.y});
         }
         
         if(grid[x][coords.y].rank != Rank::Empty || grid[x][coords.y].side == Side::Blue) {
@@ -403,10 +403,10 @@ std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
         x++;
       }
 
-      unsigned int y = (unsigned)(coords.y - 1);
+      int y = coords.y - 1;
       while(y >= 0) {
         if(grid[coords.x][y].rank == Rank::Empty || grid[coords.x][y].side == Side::Blue) {
-          destinations.push_back({(unsigned)coords.x, y});
+          destinations.push_back({(unsigned)coords.x, (unsigned)y});
         }
         
         if(grid[coords.x][y].rank != Rank::Empty || grid[coords.x][y].side == Side::Blue) {
@@ -419,7 +419,7 @@ std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
       y = coords.y + 1;
       while(y < GridSize) {
         if(grid[coords.x][y].rank == Rank::Empty || grid[coords.x][y].side == Side::Blue) {
-          destinations.push_back({(unsigned)coords.x, y});
+          destinations.push_back({(unsigned)coords.x, (unsigned)y});
         }
         
         if(grid[coords.x][y].rank != Rank::Empty || grid[coords.x][y].side == Side::Blue) {
