@@ -269,6 +269,7 @@ int main(int argc, char *argv[])
 
       // Envoie update premier client
       p.append(4);
+      gf::Log::info("\nSignal 4 for update sent to first client\n");
 
       if (our_grid.had_collision())
       {
@@ -276,20 +277,24 @@ int main(int argc, char *argv[])
         p.append(get_pos_from_vector(&coo2D, false));
         p.append(get_pos_from_vector(&scoo2D, false));
         p.append(sp_value);
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, false), get_pos_from_vector(&scoo2D, false), sp_value);
 
         if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
         {
           p.append(2);
+          gf::Log::info("_2\n");
         }
         else
         {
           if (sp_value == our_grid.get_value(scoo2D))
           {
             p.append(0);
+            gf::Log::info("_0\n");
           }
           else
           {
             p.append(1);
+            gf::Log::info("_1\n");
           }
         }
       }
@@ -298,12 +303,14 @@ int main(int argc, char *argv[])
         p.append(0);
         p.append(get_pos_from_vector(&coo2D, false));
         p.append(get_pos_from_vector(&scoo2D, false));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, false), get_pos_from_vector(&scoo2D, false));
       }
 
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
       // Envoi update deuxième client
+      gf::Log::info("\nSignal 4 for update sent to second client\n");
       p.append(4);
 
       if (our_grid.had_collision())
@@ -312,20 +319,24 @@ int main(int argc, char *argv[])
         p.append(get_pos_from_vector(&coo2D, true));
         p.append(get_pos_from_vector(&scoo2D, true));
         p.append(p_value);
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, true),get_pos_from_vector(&scoo2D, true), p_value);
 
         if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
         {
           p.append(2);
+          gf::Log::info("_2\n");
         }
         else
         {
           if (sp_value == our_grid.get_value(scoo2D))
           {
             p.append(1);
+            gf::Log::info("_1\n");
           }
           else
           {
             p.append(0);
+            gf::Log::info("_0\n");
           }
         }
       }
@@ -334,6 +345,7 @@ int main(int argc, char *argv[])
         p.append(0);
         p.append(get_pos_from_vector(&coo2D, true));
         p.append(get_pos_from_vector(&scoo2D, true));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, true), get_pos_from_vector(&scoo2D, true));
       }
 
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -400,10 +412,12 @@ int main(int argc, char *argv[])
       }
 
       // Envoie update premier client
+      gf::Log::info("\nSignal 4 for update sent to first client\n");
       p.append(4);
 
       if (our_grid.had_collision())
       {
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, false),get_pos_from_vector(&scoo2D, false), sp_value);
         p.append(1);
         p.append(get_pos_from_vector(&coo2D, false));
         p.append(get_pos_from_vector(&scoo2D, false));
@@ -412,16 +426,19 @@ int main(int argc, char *argv[])
         if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
         {
           p.append(2);
+          gf::Log::info("_2\n");
         }
         else
         {
           if (p_value == our_grid.get_value(coo2D))
           {
             p.append(1);
+            gf::Log::info("_1\n");
           }
           else
           {
             p.append(0);
+            gf::Log::info("_0\n");
           }
         }
       }
@@ -430,16 +447,19 @@ int main(int argc, char *argv[])
         p.append(0);
         p.append(get_pos_from_vector(&coo2D, false));
         p.append(get_pos_from_vector(&scoo2D, false));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, false), get_pos_from_vector(&scoo2D, false));
       }
 
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
       p.clear();
 
       // Envoi update deuxième client
+      gf::Log::info("\nSignal 4 for update sent to second client\n");
       p.append(4);
 
       if (our_grid.had_collision())
       {
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, true), get_pos_from_vector(&scoo2D, true), p_value);
         p.append(1);
         p.append(get_pos_from_vector(&coo2D, true));
         p.append(get_pos_from_vector(&scoo2D, true));
@@ -448,16 +468,19 @@ int main(int argc, char *argv[])
         if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
         {
           p.append(2);
+          gf::Log::info("_2\n");
         }
         else
         {
           if (p_value == our_grid.get_value(scoo2D))
           {
             p.append(1);
+            gf::Log::info("_1\n");
           }
           else
           {
             p.append(0);
+            gf::Log::info("_0\n");
           }
         }
       }
@@ -466,6 +489,7 @@ int main(int argc, char *argv[])
         p.append(0);
         p.append(get_pos_from_vector(&coo2D, true));
         p.append(get_pos_from_vector(&scoo2D, true));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, true), get_pos_from_vector(&scoo2D, true));
       }
 
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
