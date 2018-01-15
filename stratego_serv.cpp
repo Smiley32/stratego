@@ -282,19 +282,19 @@ int main(int argc, char *argv[])
         if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
-          gf::Log::info("_2\n");
+          std::cout << "_2" << std::endl;
         }
         else
         {
           if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(0);
-            gf::Log::info("_0\n");
+            std::cout << "_0" << std::endl;
           }
           else
           {
             p.append(1);
-            gf::Log::info("_1\n");
+            std::cout << "_1" << std::endl;
           }
         }
       }
@@ -324,19 +324,19 @@ int main(int argc, char *argv[])
         if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
-          gf::Log::info("_2\n");
+          std::cout << "_2" << std::endl;
         }
         else
         {
           if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(1);
-            gf::Log::info("_1\n");
+            std::cout << "_1" << std::endl;
           }
           else
           {
             p.append(0);
-            gf::Log::info("_0\n");
+            std::cout << "_0" << std::endl;
           }
         }
       }
@@ -426,19 +426,19 @@ int main(int argc, char *argv[])
         if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
-          gf::Log::info("_2\n");
+          std::cout << "_2" << std::endl;
         }
         else
         {
           if (p_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(1);
-            gf::Log::info("_1\n");
+            std::cout << "_1" << std::endl;
           }
           else
           {
             p.append(0);
-            gf::Log::info("_0\n");
+            std::cout << "_0" << std::endl;
           }
         }
       }
@@ -468,19 +468,19 @@ int main(int argc, char *argv[])
         if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
-          gf::Log::info("_2\n");
+          std::cout << "_2" << std::endl;
         }
         else
         {
           if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(1);
-            gf::Log::info("_1\n");
+            std::cout << "_1" << std::endl;
           }
           else
           {
             p.append(0);
-            gf::Log::info("_0\n");
+            std::cout << "_0" << std::endl;
           }
         }
       }
