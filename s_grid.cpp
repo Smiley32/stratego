@@ -203,25 +203,6 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
           gf::Log::error("\n\tError move_piece: You can't jump over an other piece\n");
           return false;
         }
-
-        // On vérifie la présence d'énnemis en haut
-        if (source.y != 0)
-        {
-          if (grid[i][dest.y-1].side != grid[source.x][source.y].side && grid[i][dest.y-1].side != Side::Other)
-          {
-            gf::Log::error("\nError move_piece: You can't pass by enemies\n");
-            return false;
-          }
-        }
-        // On vérifie la présence d'ennemis en bas
-        if (source.y != 9)
-        {
-          if (grid[i][dest.y+1].side != grid[source.x][source.y].side && grid[i][dest.y-1].side != Side::Other)
-          {
-            gf::Log::error("\nError move_piece: You can't pass by enemies\n");
-            return false;
-          }
-        }
       }
     }
     else
@@ -233,25 +214,6 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
         {
           gf::Log::error("\n\tError move_piece: You can't jump over an other piece\n");
           return false;
-        }
-
-        // On vérifie la présence d'ennemis à gauche
-        if (source.x != 0)
-        {
-          if (grid[dest.x-1][i].side != grid[source.x][source.y].side && grid[dest.x-1][i].side != Side::Other)
-          {
-            gf::Log::error("\nError move_piece: You can't pass by enemies\n");
-            return false;
-          }
-        }
-        // On vérifie la présence d'ennemis à droite
-        if (source.x != 9)
-        {
-          if (grid[dest.x+1][i].side != grid[source.x][source.y].side && grid[dest.x+1][i].side != Side::Other)
-          {
-            gf::Log::error("\nError move_piece: You can't pass by enemies\n");
-            return false;
-          }
         }
       }
     }
