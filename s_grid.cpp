@@ -52,6 +52,11 @@ int s_grid::get_value(gf::Vector2u coo2D)
   return (int) grid[coo2D.x][coo2D.y].rank;
 }
 
+Side s_grid::get_side(gf::Vector2u coo2D)
+{
+  return grid[coo2D.x][coo2D.y].side;
+}
+
 bool s_grid::create_piece(gf::Vector2u coo2D, Piece p)
 {
   // Vérification jeu non lancé
