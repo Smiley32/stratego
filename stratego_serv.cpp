@@ -279,14 +279,14 @@ int main(int argc, char *argv[])
         p.append(sp_value);
         gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, false), get_pos_from_vector(&scoo2D, false), sp_value);
 
-        if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
+        if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
           gf::Log::info("_2\n");
         }
         else
         {
-          if (sp_value == our_grid.get_value(scoo2D))
+          if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(0);
             gf::Log::info("_0\n");
@@ -321,14 +321,14 @@ int main(int argc, char *argv[])
         p.append(p_value);
         gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, true),get_pos_from_vector(&scoo2D, true), p_value);
 
-        if (sp_value != our_grid.get_value(scoo2D) && sp_value != our_grid.get_value(coo2D))
+        if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
           gf::Log::info("_2\n");
         }
         else
         {
-          if (sp_value == our_grid.get_value(scoo2D))
+          if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(1);
             gf::Log::info("_1\n");
@@ -423,14 +423,14 @@ int main(int argc, char *argv[])
         p.append(get_pos_from_vector(&scoo2D, false));
         p.append(sp_value);
 
-        if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
+        if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
           gf::Log::info("_2\n");
         }
         else
         {
-          if (p_value == our_grid.get_value(coo2D))
+          if (p_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(1);
             gf::Log::info("_1\n");
@@ -465,14 +465,14 @@ int main(int argc, char *argv[])
         p.append(get_pos_from_vector(&scoo2D, true));
         p.append(p_value);
 
-        if (p_value != our_grid.get_value(coo2D) && p_value != our_grid.get_value(scoo2D))
+        if (13 == our_grid.get_value(coo2D) && 13 != our_grid.get_value(scoo2D))
         {
           p.append(2);
           gf::Log::info("_2\n");
         }
         else
         {
-          if (p_value == our_grid.get_value(scoo2D))
+          if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
           {
             p.append(1);
             gf::Log::info("_1\n");
