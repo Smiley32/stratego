@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
       p.append(0);
       p.append(1);
-      gf::Log::info("\n0_1\n");
+      gf::Log::info("\n\t0_1\n");
 
       // Envoi du message d'acceptation au client
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
 
       p.clear();
-      gf::Log::info("\n0_1\n");
+      gf::Log::info("\n\t0_1\n");
     }
     else
     {
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
       // Envoi d'un message d'acceptation au client
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
 
-      gf::Log::info("\n0_1\n");
+      gf::Log::info("\n\t0_1\n");
 
       // Attente du premier client
       gf::Log::info("\nWaiting for the first client\n");
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
       gf::Log::info("\nFirst client connection\n");
 
 
-      gf::Log::info("\n0_1\n");
+      gf::Log::info("\n\t0_1\n");
 
       // Envoi du message d'acceptation au client
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -404,12 +404,16 @@ int main(int argc, char *argv[])
 
       if (our_grid.game_is_end())
       {
+        gf::Log::info("\nThe first client won !\n");
+        gf::Log::info("\n\t5_1\n");
         // Envoi signal de fin premier client
         p.append(5);
         p.append(1);
         boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
         p.clear();
 
+        gf::Log::info("\nThe second client lost !\n");
+        gf::Log::info("\n\t5_0\n");
         // Envoi signal de fin deuxième client
         p.append(5);
         p.append(0);
@@ -552,10 +556,14 @@ int main(int argc, char *argv[])
 
       if (our_grid.game_is_end())
       {
+        gf::Log::info("\nThe second client won !\n");
+        gf::Log::info("\n\t5_1\n");
         p.append(5);
         p.append(1);
         boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
         p.clear();
+        gf::Log::info("\nThe first client loose !\n");
+        gf::Log::info("\n\t5_0\n");
         p.append(5);
         p.append(0);
         boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
