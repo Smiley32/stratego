@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "s_grid.h"
+#include <time.h>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
@@ -77,28 +78,75 @@ int main(int argc, char *argv[])
     // Ecoute des connections
     tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), port));
 
-    // Attente du premier client
-    tcp::socket first_client(io_service);
-    acceptor.accept(first_client);
+    srand(time(NULL));
 
     boost::system::error_code ignored_error;
-
-    Packet p;
-    p.append(0);
-    p.append(1);
-
-    // Envoi du message d'acceptation au client
-    boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-    std::cout << "fait" << std::endl;
-
-    // Attente du second client
+    tcp::socket first_client(io_service);
     tcp::socket second_client(io_service);
-    acceptor.accept(second_client);
+    Packet p;
 
-    // Envoi d'un message d'acceptation au client
-    boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+    if ((rand()%2) == 1)
+    {
+      // Attente du premier client
+      gf::Log::info("\nWaiting for the first client\n");
 
-    p.clear();
+      acceptor.accept(first_client);
+
+      gf::Log::info("\nFirst client connection\n");
+
+      p.append(0);
+      p.append(1);
+      gf::Log::info("\n0_1\n");
+
+      // Envoi du message d'acceptation au client
+      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+
+      // Attente du second client
+      gf::Log::info("\nWaiting for the second client\n");
+
+      acceptor.accept(second_client);
+
+      gf::Log::info("\nSecond client connection\n");
+
+      // Envoi d'un message d'acceptation au client
+      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+
+      p.clear();
+      gf::Log::info("\n0_1\n");
+    }
+    else
+    {
+      // Attente du second client
+      gf::Log::info("\nWaiting for the second client\n");
+
+      acceptor.accept(second_client);
+
+      gf::Log::info("\nSecond client connection\n");
+
+      p.append(0);
+      p.append(1);
+
+      // Envoi d'un message d'acceptation au client
+      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+
+      gf::Log::info("\n0_1\n");
+
+      // Attente du premier client
+      gf::Log::info("\nWaiting for the first client\n");
+
+      acceptor.accept(first_client);
+
+      gf::Log::info("\nFirst client connection\n");
+
+
+      gf::Log::info("\n0_1\n");
+
+      // Envoi du message d'acceptation au client
+      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+
+      p.clear();
+    }
+
     // Commemencement boucle de lecture des pièces
     boost::array<char, 128> buf;
     s_grid our_grid;
