@@ -246,7 +246,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
     // Cas de la bombe et du démineur
     if ((int) grid[dest.x][dest.y].rank == 0 && (int) grid[source.x][source.y].rank == 8)
     {
-      gf::Log::info("\n\tOops, assailant bump into bombs !\n");
+      gf::Log::info("\n\tBomb cleared\n");
       grid[dest.x][dest.y] = grid[source.x][source.y];
       grid[source.x][source.y].side = Side::Other;
       grid[source.x][source.y].rank = Rank::Empty;
@@ -267,6 +267,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
     // Cas standard
     if ((int) grid[dest.x][dest.y].rank < (int) grid[source.x][source.y].rank)
     { // Attaquant moins fort que défenseur
+      gf::Log::info("\n\tAssailant loose !\n");
       grid[source.x][source.y].side = Side::Other;
       grid[source.x][source.y].rank = Rank::Empty;
       return true;
@@ -275,6 +276,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
     {
       if ((int) grid[dest.x][dest.y].rank > (int) grid[source.x][source.y].rank)
       { // Attaquant plus fort que défenseur
+        gf::Log::info("\n\tAssailant win !\n");
         grid[dest.x][dest.y] = grid[source.x][source.y];
         grid[source.x][source.y].side = Side::Other;
         grid[source.x][source.y].rank = Rank::Empty;
@@ -282,6 +284,7 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
       }
       else
       { // Pièces de puissance égales
+        gf::Log::info("\n\tThe fight was titanic, both sides were destroyed\n");
         grid[source.x][source.y].side = Side::Other;
         grid[source.x][source.y].rank = Rank::Empty;
         grid[dest.x][dest.y].side = Side::Other;
@@ -294,10 +297,14 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
   // Cas d'un déplacement sur une case vide
   if ((int) grid[dest.x][dest.y].rank == 13)
   {
+    gf::Log::info("\n\tThe piece succeed is move... little player\n");
     collision = false;
-    tmp = grid[source.x][source.y];
-    grid[source.x][source.y] = grid[dest.x][dest.y];
-    grid[dest.x][dest.y] = tmp;
+    tmp.rank = grid[source.x][source.y].rank;
+    tmp.side = grid[source.x][source.y].side;
+    grid[source.x][source.y].rank = grid[dest.x][dest.y].rank;
+    grid[source.x][source.y].side = grid[dest.x][dest.y].side;
+    grid[dest.x][dest.y].rank = tmp.rank;
+    grid[dest.x][dest.y].side = tmp.side;
 
     return true;
   }

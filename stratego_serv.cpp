@@ -13,13 +13,26 @@ boost::array<char, 128> get_message(tcp::socket *socket)
 {
   boost::array<char, 128> buf;
   boost::system::error_code error;
+  bool is_ok = false;
+  size_t len;
 
-  size_t len = socket->read_some(boost::asio::buffer(buf), error);
 
-  if (error)
-  {
-    throw boost::system::system_error(error);
-  }
+    len = socket->read_some(boost::asio::buffer(buf), error);
+
+    if (error)
+    {
+      throw boost::system::system_error(error);
+    }
+
+
+
+    gf::Log::info("\nMessage reçu:\n");
+    for (size_t i = 0; i < len; i++)
+    {
+      std::cout << (int) buf[i] << ' ';
+    }
+
+    std::cout << std::endl;
 
   // std::string data(buf.begin(), buf.begin() + len);
   return buf;
@@ -28,6 +41,7 @@ boost::array<char, 128> get_message(tcp::socket *socket)
 
 void get_vector_coord(gf::Vector2u *coo2D, int piece_pos, bool inversed)
 {
+  // For the first client
   if (!inversed)
   {
     coo2D->x = 9 - (piece_pos % 10);
@@ -54,14 +68,33 @@ int get_pos_from_vector(gf::Vector2u *coo2D, bool inversed)
 
 int main(int argc, char *argv[])
 {
+  Packet p;
+  boost::asio::io_service io_service;
+  boost::system::error_code ignored_error;
   boost::system::error_code error;
+  tcp::socket first_client(io_service);
+  tcp::socket second_client(io_service);
+
+  boost::array<char, 128> buf;
+  s_grid our_grid;
+  int port;
+  int first_p_pos;
+  int second_p_pos;
+  int piece_value;
+  int first_p_value;
+  int second_p_value;
+  bool red_team_rdy = false;
+  bool blue_team_rdy = false;
+  bool accepted;
+  Piece current_piece;
+  gf::Vector2u first_coo2D;
+  gf::Vector2u second_coo2D;
+  size_t len;
+  srand(time(NULL));
+
 
   try
   {
-    boost::asio::io_service io_service;
-
-    int port;
-
     if (argc != 2)
     {
       gf::Log::error("\nError: Invalid number of arguments\n");
@@ -77,13 +110,6 @@ int main(int argc, char *argv[])
 
     // Ecoute des connections
     tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), port));
-
-    srand(time(NULL));
-
-    boost::system::error_code ignored_error;
-    tcp::socket first_client(io_service);
-    tcp::socket second_client(io_service);
-    Packet p;
 
     if ((rand()%2) == 1)
     {
@@ -148,20 +174,6 @@ int main(int argc, char *argv[])
     }
 
     // Commemencement boucle de lecture des pièces
-    boost::array<char, 128> buf;
-    s_grid our_grid;
-    int piece_pos;
-    int spiece_pos;
-    int piece_value;
-    int p_value;
-    int sp_value;
-    bool r_rdy = false;
-    bool b_rdy = false;
-    bool accepted;
-    Piece current_piece;
-    gf::Vector2u coo2D;
-    gf::Vector2u scoo2D;
-    size_t len;
 
     our_grid.create_empty_grid();
 
@@ -172,7 +184,7 @@ int main(int argc, char *argv[])
     while (!our_grid.start_game())
     {
       // SI TEAM ROUGE PAS ENCORE PRETE
-      if (!r_rdy)
+      if (!red_team_rdy)
       {
         buf = get_message(&first_client);
 
@@ -189,14 +201,14 @@ int main(int argc, char *argv[])
 
         for (size_t i = 1; i < 81; i = i + 2)
         {
-          piece_pos = (int) (buf[i]);
-          piece_value = (int) (buf[i+1]);
+          first_p_pos = (int) (buf[i]);
+          first_p_value = (int) (buf[i+1]);
 
-          get_vector_coord(&coo2D, piece_pos, true);
-          current_piece.rank = (Rank) piece_value;
+          get_vector_coord(&first_coo2D, first_p_pos, true);
+          current_piece.rank = (Rank) first_p_value;
           current_piece.side = Side::Red;
 
-          if (!our_grid.create_piece(coo2D, current_piece))
+          if (!our_grid.create_piece(first_coo2D, current_piece))
           {
             p.append(0);
             p.append(0);
@@ -205,9 +217,10 @@ int main(int argc, char *argv[])
             break;
           }
         }
-        r_rdy = our_grid.red_t_ok();
+        red_team_rdy = our_grid.red_t_ok();
 
-        if(r_rdy) {
+        if (red_team_rdy)
+        {
           p.append(0);
           p.append(1);
           boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -216,7 +229,7 @@ int main(int argc, char *argv[])
       }
 
       // SI TEAM BLEUE PAS ENCORE PRETE
-      if (!b_rdy)
+      if (!blue_team_rdy)
       {
         buf = get_message(&second_client);
 
@@ -232,14 +245,14 @@ int main(int argc, char *argv[])
 
         for (size_t i = 1; i < 81; i = i + 2)
         {
-          piece_pos = (int) (buf[i]);
-          piece_value = (int) (buf[i+1]);
+          first_p_pos = (int) (buf[i]);
+          first_p_value = (int) (buf[i+1]);
 
-          get_vector_coord(&coo2D, piece_pos, false);
-          current_piece.rank = (Rank) piece_value;
+          get_vector_coord(&first_coo2D, first_p_pos, false);
+          current_piece.rank = (Rank) first_p_value;
           current_piece.side = Side::Blue;
 
-          if (!our_grid.create_piece(coo2D, current_piece))
+          if (!our_grid.create_piece(first_coo2D, current_piece))
           {
             p.append(0);
             p.append(0);
@@ -248,9 +261,9 @@ int main(int argc, char *argv[])
             break;
           }
         }
-        b_rdy = our_grid.blue_t_ok();
+        blue_team_rdy = our_grid.blue_t_ok();
 
-        if(b_rdy) {
+        if(blue_team_rdy) {
           p.append(0);
           p.append(1);
           boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -280,26 +293,41 @@ int main(int argc, char *argv[])
         buf = get_message(&first_client);
 
         if (buf[0] != 3)
-        {
+        {/*
           p.append(0);
           p.append(0);
           boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          p.clear();*/
           gf::Log::error("\nSignal Error: Expected 3 but get %c\n", buf[0]);
+          continue;
         }
 
-        piece_pos = (int) (buf[1]);
-        spiece_pos = (int) (buf[2]);
+        first_p_pos = (int) (buf[1]);
+        second_p_pos = (int) (buf[2]);
 
-        get_vector_coord(&coo2D, piece_pos, true);
-        get_vector_coord(&scoo2D, spiece_pos, true);
-        p_value = our_grid.get_value(coo2D);
-        sp_value = our_grid.get_value(scoo2D);
+        get_vector_coord(&first_coo2D, first_p_pos, true);
+        get_vector_coord(&second_coo2D, second_p_pos, true);
+        first_p_value = our_grid.get_value(first_coo2D);
+        second_p_value = our_grid.get_value(second_coo2D);
 
-        gf::Log::info("\nAsk for a moove from %d %d (team 1) to %d %d (team 2), piece have value %d, target is %d\n", coo2D.x, coo2D.y, scoo2D.x, scoo2D.y,p_value, sp_value);
-        if (our_grid.get_side(coo2D) == Side::Red)
+        gf::Log::info("\nAsk for a moove from %d %d (team 1) to %d %d, piece have value %d, target is %d\n", first_coo2D.x, first_coo2D.y, second_coo2D.x, second_coo2D.y, first_p_value, second_p_value);
+
+        if (our_grid.get_side(first_coo2D) == Side::Red)
         {
-          accepted = our_grid.move_piece(coo2D, scoo2D);
+          std::cout << "Red" << std::endl;
+          accepted = our_grid.move_piece(first_coo2D, second_coo2D);
+        }
+        else
+        {
+          if (our_grid.get_side(first_coo2D) == Side::Blue)
+          {
+            std::cout << "Blue" << std::endl;
+          }
+          else
+          {
+            std::cout << "Other" << std::endl;
+          }
+          gf::Log::info("\nYou can't moove a piece from the enemy team\n");
         }
 
         if (accepted)
@@ -325,19 +353,19 @@ int main(int argc, char *argv[])
       if (our_grid.had_collision())
       {
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, false));
-        p.append(get_pos_from_vector(&scoo2D, false));
-        p.append(sp_value);
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, false), get_pos_from_vector(&scoo2D, false), sp_value);
+        p.append(get_pos_from_vector(&first_coo2D, false));
+        p.append(get_pos_from_vector(&second_coo2D, false));
+        p.append(second_p_value);
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true), second_p_value);
 
-        if (13 == our_grid.get_value(coo2D) && 13 == our_grid.get_value(scoo2D))
+        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
         {
           p.append(2);
           std::cout << "_2" << std::endl;
         }
         else
         {
-          if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
+          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
           {
             p.append(0);
             std::cout << "_0" << std::endl;
@@ -352,9 +380,9 @@ int main(int argc, char *argv[])
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, false));
-        p.append(get_pos_from_vector(&scoo2D, false));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, false), get_pos_from_vector(&scoo2D, false));
+        p.append(get_pos_from_vector(&first_coo2D, false));
+        p.append(get_pos_from_vector(&second_coo2D, false));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, false), get_pos_from_vector(&second_coo2D, false));
       }
 
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -367,19 +395,19 @@ int main(int argc, char *argv[])
       if (our_grid.had_collision())
       {
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
-        p.append(p_value);
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, true),get_pos_from_vector(&scoo2D, true), p_value);
+        p.append(get_pos_from_vector(&first_coo2D, true));
+        p.append(get_pos_from_vector(&second_coo2D, true));
+        p.append(first_p_value);
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, true),get_pos_from_vector(&second_coo2D, true), first_p_value);
 
-        if (13 == our_grid.get_value(coo2D) && 13 == our_grid.get_value(scoo2D))
+        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
         {
           p.append(2);
           std::cout << "_2" << std::endl;
         }
         else
         {
-          if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
+          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
           {
             p.append(1);
             std::cout << "_1" << std::endl;
@@ -394,9 +422,9 @@ int main(int argc, char *argv[])
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, true), get_pos_from_vector(&scoo2D, true));
+        p.append(get_pos_from_vector(&first_coo2D, true));
+        p.append(get_pos_from_vector(&second_coo2D, true));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true));
       }
 
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -433,25 +461,38 @@ int main(int argc, char *argv[])
         buf = get_message(&second_client);
 
         if (buf[0] != 3)
-        {
+        {/*
           p.append(0);
           p.append(0);
           boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          p.clear();*/
           gf::Log::error("\nSignal Error: Expected 3 but get %c\n", buf[0]);
+          continue;
         }
 
-        piece_pos = (int) (buf[1]);
-        spiece_pos = (int) (buf[2]);
-        get_vector_coord(&coo2D, piece_pos, false);
-        get_vector_coord(&scoo2D, spiece_pos, false);
-        p_value = our_grid.get_value(coo2D);
-        sp_value = our_grid.get_value(scoo2D);
-        gf::Log::info("\nAsk for a moove from %d %d (team 2) to %d %d (team 1), piece have value %d, target is %d\n", coo2D.x, coo2D.y, scoo2D.x, scoo2D.y,p_value, sp_value);
+        first_p_pos = (int) (buf[1]);
+        second_p_pos = (int) (buf[2]);
+        get_vector_coord(&first_coo2D, first_p_pos, false);
+        get_vector_coord(&second_coo2D, second_p_pos, false);
+        first_p_value = our_grid.get_value(first_coo2D);
+        second_p_value = our_grid.get_value(second_coo2D);
+        gf::Log::info("\nAsk for a moove from %d %d (team 2) to %d %d (team 1), piece have value %d, target is %d\n", first_coo2D.x, first_coo2D.y, second_coo2D.x, second_coo2D.y, first_p_value, second_p_value);
 
-        if (our_grid.get_side(coo2D) == Side::Blue)
+        if (our_grid.get_side(first_coo2D) == Side::Blue)
         {
-          accepted = our_grid.move_piece(coo2D, scoo2D);
+          std::cout << "Blue" << std::endl;
+          accepted = our_grid.move_piece(first_coo2D, second_coo2D);
+        }
+        else
+        {
+          if (our_grid.get_side(first_coo2D) == Side::Red)
+          {
+            std::cout << "Red" << std::endl;
+          }
+          else
+          {
+            std::cout << "Other" << std::endl;
+          }
         }
 
         if (accepted)
@@ -476,37 +517,37 @@ int main(int argc, char *argv[])
 
       if (our_grid.had_collision())
       {
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, false),get_pos_from_vector(&scoo2D, false), sp_value);
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, false),get_pos_from_vector(&second_coo2D, false), second_p_value);
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, false));
-        p.append(get_pos_from_vector(&scoo2D, false));
-        p.append(sp_value);
+        p.append(get_pos_from_vector(&first_coo2D, false));
+        p.append(get_pos_from_vector(&second_coo2D, false));
+        p.append(first_p_value);
 
-        if (13 == our_grid.get_value(coo2D) && 13 == our_grid.get_value(scoo2D))
+        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
         {
           p.append(2);
           std::cout << "_2" << std::endl;
         }
         else
         {
-          if (p_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
-          {
-            p.append(1);
-            std::cout << "_1" << std::endl;
-          }
-          else
+          if (first_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
           {
             p.append(0);
             std::cout << "_0" << std::endl;
+          }
+          else
+          {
+            p.append(1);
+            std::cout << "_1" << std::endl;
           }
         }
       }
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, false));
-        p.append(get_pos_from_vector(&scoo2D, false));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, false), get_pos_from_vector(&scoo2D, false));
+        p.append(get_pos_from_vector(&first_coo2D, false));
+        p.append(get_pos_from_vector(&second_coo2D, false));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, false), get_pos_from_vector(&second_coo2D, false));
       }
 
       boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
@@ -518,37 +559,37 @@ int main(int argc, char *argv[])
 
       if (our_grid.had_collision())
       {
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&coo2D, true), get_pos_from_vector(&scoo2D, true), p_value);
+        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true), first_p_value);
         p.append(1);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
-        p.append(p_value);
+        p.append(get_pos_from_vector(&first_coo2D, true));
+        p.append(get_pos_from_vector(&second_coo2D, true));
+        p.append(second_p_value);
 
-        if (13 == our_grid.get_value(coo2D) && 13 == our_grid.get_value(scoo2D))
+        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
         {
           p.append(2);
           std::cout << "_2" << std::endl;
         }
         else
         {
-          if (sp_value == our_grid.get_value(scoo2D) && our_grid.get_value(coo2D) == 13)
-          {
-            p.append(1);
-            std::cout << "_1" << std::endl;
-          }
-          else
+          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
           {
             p.append(0);
             std::cout << "_0" << std::endl;
+          }
+          else
+          {
+            p.append(1);
+            std::cout << "_1" << std::endl;
           }
         }
       }
       else
       {
         p.append(0);
-        p.append(get_pos_from_vector(&coo2D, true));
-        p.append(get_pos_from_vector(&scoo2D, true));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&coo2D, true), get_pos_from_vector(&scoo2D, true));
+        p.append(get_pos_from_vector(&first_coo2D, true));
+        p.append(get_pos_from_vector(&second_coo2D, true));
+        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true));
       }
 
       boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
