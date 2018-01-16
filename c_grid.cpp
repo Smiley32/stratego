@@ -85,7 +85,7 @@ bool Grid::setPiece(gf::Vector2u coords, Piece p) {
     grid[coords.x][coords.y].rank = p.rank;
     grid[coords.x][coords.y].side = p.side;
     modif = true;
-    std::cout << "..." << coords.x << "," << coords.y << " ; " << (int)grid[coords.x][coords.y].rank << std::endl;
+    // std::cout << "..." << coords.x << "," << coords.y << " ; " << (int)grid[coords.x][coords.y].rank << std::endl;
     return true;
   }
   return false;
@@ -183,13 +183,13 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
     gf::Sprite sprite(*t, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
     sprite.setPosition(spritePos);
     target.draw(sprite, states);
-    std::cout << "<" << r << "> affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
+    // std::cout << "<" << r << "> affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
   }
 }
 
 void Grid::update(gf::Time time) {
   if(modif) {
-    std::cout << "update" << std::endl;
+    // std::cout << "update" << std::endl;
     modif = false;
 
     m_layer.clear();
@@ -256,7 +256,7 @@ bool Grid::isValidMove(gf::Vector2u coords) {
   std::vector<gf::Vector2u> destinations = getDestinations(selected);
 
   for(int i = 0; i < destinations.size(); i++) {
-    std::cout << destinations[i].x << " - " << destinations[i].y << std::endl;
+    // std::cout << destinations[i].x << " - " << destinations[i].y << std::endl;
     if(coords.x == destinations[i].x && coords.y == destinations[i].y) {
       return true;
     }
@@ -274,7 +274,7 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
   std::vector<gf::Vector2u> destinations = getDestinations(selected);
 
   for(int i = 0; i < destinations.size(); i++) {
-    std::cout << destinations[i].x << " - " << destinations[i].y << std::endl;
+    // std::cout << destinations[i].x << " - " << destinations[i].y << std::endl;
     if(coords.x == destinations[i].x && coords.y == destinations[i].y) {
       // On commence l'animation
       animEnabled = true;
@@ -294,7 +294,7 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
 bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win) {
   // TODO: verifs des coords
 
-  std::cout << "...(" << firstCoords.x << ";" << firstCoords.y << ") (" << lastCoords.x << ";" << lastCoords.y << ") " << (int)lastPieceBefore.rank << ";" << win << "!" << std::endl;
+  // std::cout << "...(" << firstCoords.x << ";" << firstCoords.y << ") (" << lastCoords.x << ";" << lastCoords.y << ") " << (int)lastPieceBefore.rank << ";" << win << "!" << std::endl;
 
   updateFirstPiece = grid[firstCoords.x][firstCoords.y];
 
@@ -337,7 +337,7 @@ bool Grid::movePieceTo(gf::Vector2u first, gf::Vector2u last, bool reasignPieces
     updateLastPiece = updateFirstPiece;
   }
 
-  std::cout << updateFirstCoords.x << ";" << updateFirstCoords.y << ";" << updateLastCoords.x << ";" << updateLastCoords.y << ";" << (int)updateLastPiece.rank << ";" << std::endl;
+  // std::cout << updateFirstCoords.x << ";" << updateFirstCoords.y << ";" << updateLastCoords.x << ";" << updateLastCoords.y << ";" << (int)updateLastPiece.rank << ";" << std::endl;
 
   animEnabled = true;
   target = last;

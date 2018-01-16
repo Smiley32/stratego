@@ -46,6 +46,13 @@ boost::array<char, 128> get_message(tcp::socket *socket, size_t *length) {
 }
 
 void send_packet(Packet &p) {
+  char *data = (char*)p.getData();
+  std::cout << "Message envoyé : ";
+  for(int i = 0; i < p.getDataSize(); i++) {
+    std::cout << (int)data[i] << ";";
+  }
+  std::cout << std::endl;
+  
   boost::system::error_code ignored_error;
   boost::asio::write(*sock, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
 }
@@ -85,7 +92,9 @@ enum class State {
   Connected,
   Placing,
   PlacingOver,
-  WaitPlaySignal
+  WaitPlaySignal,
+  Win,
+  Lose
 };
 
 enum class CustomError {
@@ -189,6 +198,28 @@ bool escFct(gf::RenderWindow &renderer, gf::UI &ui) {
  */
 bool displayStateUi(gf::RenderWindow &renderer, gf::UI &ui, State state) {
   bool ret = false;
+
+  if(state == State::Win) {
+    if(ui.begin("Victoire !", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+      ui.layoutRowDynamic(25, 1);
+
+      ui.label("Félicitations, vous avez gagné !");
+    }
+
+    ui.end();
+    renderer.draw(ui);
+  } else if(state == State::Lose) {
+    if(ui.begin("Défaite...", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+
+      ui.layoutRowDynamic(25, 1);
+
+      ui.label("Dommage, vous avez perdu");
+    }
+
+    ui.end();
+    renderer.draw(ui);
+  }
 
   if(state == State::WaitAnswer) {
     if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
@@ -540,7 +571,7 @@ int main(int argc, char *argv[]) {
         
         Piece p = s.getRandomPiece();
         while(p.rank != Rank::Empty) {
-          std::cout << "Une pièce en plus !" << std::endl;
+          // std::cout << "Une pièce en plus !" << std::endl;
           g.setPieceRandom(p);
           s.takeOnePiece((int)p.rank);
           
@@ -865,6 +896,9 @@ int main(int argc, char *argv[]) {
 
           g.selected = {-1, -1};
 
+          break;
+        case 5: // Signal de fin du jeu
+          state = msg[1] ? State::Win : State::Lose;
           break;
       }
     }
