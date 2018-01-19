@@ -28,8 +28,6 @@
 
 using boost::asio::ip::tcp;
 
-tcp::socket *sock;
-gf::Queue<boost::array<char, 128>> messages;
 
 // Récupération d'un message du serveur
 boost::array<char, 128> get_message(tcp::socket *socket, size_t *length) {
@@ -45,7 +43,7 @@ boost::array<char, 128> get_message(tcp::socket *socket, size_t *length) {
   return buf;
 }
 
-void send_packet(Packet &p) {
+void send_packet(tcp::socket* socket, Packet &p) {
   char *data = (char*)p.getData();
   std::cout << "Message envoyé : ";
   for(int i = 0; i < p.getDataSize(); i++) {
@@ -54,10 +52,10 @@ void send_packet(Packet &p) {
   std::cout << std::endl;
   
   boost::system::error_code ignored_error;
-  boost::asio::write(*sock, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+  boost::asio::write(*socket, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
 }
 
-int connection(char *ip, char *port) {
+int connection(tcp::socket** socket, char *ip, char *port) {
   boost::asio::io_service io_service;
   tcp::resolver resolver(io_service);
 
@@ -66,12 +64,12 @@ int connection(char *ip, char *port) {
   tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
   tcp::resolver::iterator end;
 
-  sock = new tcp::socket(io_service);
+  *socket = new tcp::socket(io_service);
   boost::system::error_code error = boost::asio::error::host_not_found;
 
   while(error && endpoint_iterator != end) {
-    sock->close();
-    sock->connect(*endpoint_iterator++, error);
+    (*socket)->close();
+    (*socket)->connect(*endpoint_iterator++, error);
   }
 
   if(error) {
@@ -104,13 +102,17 @@ enum class CustomError {
   WrongPlacing
 };
 
-// Thread qui va communiquer avec le serveur (le parmaètre est juste un test)
-void reception_thread(char *ip, char *port) {
+// Thread qui va communiquer avec le serveur
+void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<boost::array<char, 128>>* messages) {
     bool fatalError = false;
     while( !fatalError ) {
       size_t readLength;
-      boost::array<char, 128> msg = get_message(sock, &readLength);
+      boost::array<char, 128> msg = get_message(socket, &readLength);
+
       std::cout << "Id du message : " << (int)msg[0] << " ; taille " << readLength << std::endl;
+      if(readLength == 0) {
+        continue;
+      }
 
       // Taille attendue des messages
       size_t length;
@@ -144,7 +146,7 @@ void reception_thread(char *ip, char *port) {
         }
         std::cout << std::endl;
         std::cout << "Ajout du message" << (int)msg[0] << std::endl;
-        messages.push(msg);
+        messages->push(msg);
 
         continuer = false;
         if(readLength > length) {
@@ -166,7 +168,7 @@ void reception_thread(char *ip, char *port) {
  * 
  * @return bool true si l'utilisateur a demandé à quitter
  */
-bool escFct(gf::RenderWindow &renderer, gf::UI &ui) {
+bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui) {
   bool ret = false;
 
   // Afficher la fenêtre d'UI
@@ -178,7 +180,7 @@ bool escFct(gf::RenderWindow &renderer, gf::UI &ui) {
       // Envoi d'un message de déconnexion au serveur
       Packet p;
       p.append(6); // Le client quitte
-      send_packet(p);
+      send_packet(socket, p);
       // window.close();
       ret = true;
     }
@@ -322,6 +324,9 @@ int main(int argc, char *argv[]) {
 
   State state = State::Connexion;
 
+  gf::Queue<boost::array<char, 128>> messages;
+  tcp::socket *socket;
+
   /******************************************************************/
   /***
   /***
@@ -342,6 +347,8 @@ int main(int argc, char *argv[]) {
   // Première boucle : sélection du serveur
   while(state != State::Connected && window.isOpen()) {
     gf::Event event;
+
+    std::cout << window.getSize().x << window.getSize().y << std::endl;
 
     while(window.pollEvent(event)) {
       actions.processEvent(event);
@@ -399,10 +406,10 @@ int main(int argc, char *argv[]) {
         servIp[servIpLength] = '\0';
 
         try {
-          connection(servIp, servPort);
+          connection(&socket, servIp, servPort);
 
           // Création du thread qui va se connecter au serveur
-          std::thread rt(reception_thread, servIp, servPort);
+          std::thread rt(reception_thread, servIp, servPort, socket, &messages);
 
           rt.detach();
 
@@ -553,7 +560,7 @@ int main(int argc, char *argv[]) {
         // Envoi d'un message de déconnexion au serveur
         Packet p;
         p.append(6); // Le client quitte
-        send_packet(p);
+        send_packet(socket, p);
         state = State::Exit;
       }
 
@@ -605,7 +612,7 @@ int main(int argc, char *argv[]) {
 
           // std::cout << "'" << std::endl;
 
-          send_packet(p);
+          send_packet(socket, p);
 
           // On attend maintenant la réponse :
           state = State::WaitAnswer;
@@ -672,7 +679,7 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(displayEscUi) {
-        if(escFct(renderer, ui)) {
+        if(escFct(socket, renderer, ui)) {
           // Il va falloir quitter
           state = State::Exit;
         }
@@ -783,7 +790,7 @@ int main(int argc, char *argv[]) {
                   // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
                   p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
                   p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
-                  send_packet(p);
+                  send_packet(socket, p);
                   
                   state = State::WaitUpdateAnswer;
                 // }
@@ -799,7 +806,7 @@ int main(int argc, char *argv[]) {
       // Envoi d'un message de déconnexion au serveur
       Packet p;
       p.append(6); // Le client quitte
-      send_packet(p);
+      send_packet(socket, p);
       window.close();
     }
 
@@ -905,7 +912,7 @@ int main(int argc, char *argv[]) {
 
     // UI
     if(displayEscUi) {
-      if(escFct(renderer, ui)) {
+      if(escFct(socket, renderer, ui)) {
         state = State::Exit;
       }
     }
