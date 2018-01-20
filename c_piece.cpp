@@ -21,11 +21,13 @@ Selection::Selection(gf::ResourceManager& resources)
 }
 
 void Selection::setPosition(gf::Vector2f origin) {
-  m_layer.setPosition(origin);
+  // m_layer.setPosition(origin);
+  position = origin;
 }
 
 gf::Vector2f Selection::getPosition() {
-  return m_layer.getPosition();
+  // return m_layer.getPosition();
+  return get_current_position(position, scale);
 }
 
 Piece Selection::getPiece(gf::Vector2u coords) {
@@ -69,6 +71,11 @@ gf::Vector2i Selection::getPieceCoordsFromMouse(gf::Vector2f coords) {
   return {(int)((coords.x - getPosition().x) / TileSize), (int)((coords.y - getPosition().y) / TileSize)};
 }
 
+void Selection::update_scale(double new_scale) {
+  scale = new_scale;
+  TileSize = DEFAULT_PIECE_WIDTH * scale;
+}
+
 void Selection::selectPiece(unsigned int pieceNumber) {
   if(pieceNumber < NbPieces && nbPieces[pieceNumber] > 0) {
     selected = pieceNumber;
@@ -107,6 +114,17 @@ int Selection::aleat(int min, int max) {
 
 void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
+  // Affichage du fond
+  gf::Texture background_texture;
+  background_texture.loadFromFile("select.png");
+
+  gf::Sprite background;
+  background.setTexture(background_texture);
+  background.setPosition({getPosition().x, getPosition().y});
+
+  background.setScale(scale);
+  target.draw(background);
+
   gf::Texture texture;
   texture.loadFromFile("pieces.png");
 
@@ -122,8 +140,9 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
       r = (int)Rank::Empty;
     }
 
-    gf::Sprite sprite(texture, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+    gf::Sprite sprite(texture, gf::RectF( ((r * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((r * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
     sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y});
+    sprite.setScale(scale);
     target.draw(sprite, states);
 
     // Affichage du nombre de pièces restantes
@@ -137,12 +156,14 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
 
   // Affichage de la pièce selectionnée
   if(selected != -1) {
-    gf::Sprite sprite(texture, gf::RectF( ((selected * TileSize) % 256) / 256.0, (((selected * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
-    sprite.setPosition({mouseCoords.x - TileSize / 2, mouseCoords.y - TileSize / 2});
+    gf::Sprite sprite(texture, gf::RectF( ((selected * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((selected * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
+    sprite.setPosition({(float)(mouseCoords.x - TileSize / 2), (float)(mouseCoords.y - TileSize / 2)});
+    sprite.setScale(scale);
 
     target.draw(sprite, states);
   }
 
+  std::cout << "Test..." << std::endl;
 
   // target.draw(m_layer);
 }

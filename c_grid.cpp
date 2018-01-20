@@ -42,6 +42,8 @@ Grid::Grid(gf::ResourceManager& resources)
       grid[x][y].rank = Rank::Unknown;
     }
   }
+
+  scale = 1;
 }
 
 void Grid::createGrid() {
@@ -56,11 +58,13 @@ void Grid::createGrid() {
 }
 
 void Grid::setPosition(gf::Vector2f origin) {
-  m_layer.setPosition(origin);
+  // m_layer.setPosition(origin);
+  position = origin;
 }
 
 gf::Vector2f Grid::getPosition() {
-  return m_layer.getPosition();
+  // return m_layer.getPosition();
+  return get_current_position(position, scale);
 }
 
 gf::Vector2i Grid::getPieceCoordsFromMouse(gf::Vector2f coords) {
@@ -106,6 +110,17 @@ void Grid::setPieceRandom(Piece p) {
 void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   // std::cout << "Dessin..." << std::endl;
   // target.draw(m_layer, states);
+
+  // Affichage du fond
+  gf::Texture background_texture;
+  background_texture.loadFromFile("board.png");
+
+  gf::Sprite background;
+  background.setTexture(background_texture);
+  background.setPosition({getPosition().x - 30, getPosition().y - 30});
+
+  background.setScale(scale);
+  target.draw(background);
 
   // Tracé de la grille
   for(unsigned x = 0; x <= GridSize; x++) {
@@ -159,8 +174,9 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
         t = &texture;
       }
 
-      gf::Sprite sprite(*t, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+      gf::Sprite sprite(*t, gf::RectF( ((r * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((r * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
       sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y + (y * TileSize)});
+      sprite.setScale(scale);
       target.draw(sprite, states);
     }
   }
@@ -180,8 +196,9 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
       r = (int)grid[selected.x][selected.y].rank;
     }
     
-    gf::Sprite sprite(*t, gf::RectF( ((r * TileSize) % 256) / 256.0, (((r * TileSize) / 256) * TileSize) / 256.0, TileSize / 256.0, TileSize / 256.0));
+    gf::Sprite sprite(*t, gf::RectF( ((r * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((r * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
     sprite.setPosition(spritePos);
+    sprite.setScale(scale);
     target.draw(sprite, states);
     // std::cout << "<" << r << "> affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
   }
@@ -360,6 +377,11 @@ bool Grid::discoverPiece(gf::Vector2u coords, Rank r) {
 
 bool Grid::isSelected() {
   return selected.x != -1 && selected.y != -1;
+}
+
+void Grid::update_scale(double s) {
+  scale = s;
+  TileSize = (unsigned int)(DEFAULT_PIECE_WIDTH * scale);
 }
 
 std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {

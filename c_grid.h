@@ -12,13 +12,16 @@
 
 #include "c_piece.h"
 
+#define DEFAULT_GRID_X 160
+#define DEFAULT_GRID_Y 100
+
 class Grid : public gf::Entity {
 public:
   /// Case sélectionnée (on affiche les déplacements possibles avec cette pièce)
   gf::Vector2i selected = {-1, -1};
 
   /// Taille (pixels) d'une tile
-  static constexpr unsigned TileSize = 64;
+  unsigned TileSize = DEFAULT_PIECE_WIDTH;
 
   /// Nombre de cases dans la grille
   static constexpr unsigned GridSize = 10;
@@ -73,7 +76,13 @@ public:
 
   bool isValidMove(gf::Vector2u coords);
 
+  /// Met à jour la taille de la grille (et donc sa position)
+  void update_scale(double scale);
+
 private:
+  gf::Vector2u position;
+  double scale;
+
   /// Découvre une pièce ennemie (bleue)
   bool discoverPiece(gf::Vector2u coords, Rank r);
 

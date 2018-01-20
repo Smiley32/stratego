@@ -13,6 +13,19 @@
 
 #include <string>
 
+#define DEFAULT_PIECE_WIDTH 64
+
+#define DEFAULT_SELECT_X 96
+#define DEFAULT_SELECT_Y 804
+
+#define DEFAULT_FIRST_BAR_X 36
+#define DEFAULT_FIRST_BAR_Y 32
+
+#define DEFAULT_SECOND_BAR_X 864
+#define DEFAULT_SECOND_BAR_Y 36
+
+gf::Vector2u get_current_position(gf::Vector2u default_pos, double scale);
+
 /**
  * Camp de la piece : Other pour les éléments neutres (lac / case vide)
  */
@@ -65,7 +78,7 @@ struct Piece {
  */
 class Selection : public gf::Entity {
 public:
-  static constexpr unsigned TileSize = 64;
+  unsigned TileSize = DEFAULT_PIECE_WIDTH;
   static constexpr unsigned NbPieces = 12;
 
   // Indice de la pièce selectionnée (-1 si aucune)
@@ -79,8 +92,6 @@ public:
   gf::Vector2i getPieceCoordsFromMouse(gf::Vector2f coords);
 
   virtual void render(gf::RenderTarget& target, const gf::RenderStates& states) override;
-
-  
 
   void selectPiece(unsigned int pieceNumber);
   void takeOnePiece(unsigned int pieceNumber);
@@ -97,6 +108,9 @@ public:
   /// Indique si il reste des pièces à placer
   bool isEmpty();
 
+  /// Changer la proportion
+  void update_scale(double new_scale);
+
 private:
   /// Nombre aléatoire entre min et max
   int aleat(int min, int max);
@@ -107,6 +121,14 @@ private:
   Piece grid[NbPieces];
 
   gf::Vector2i mouseCoords;
+
+  double scale;
+  gf::Vector2f position;
+
+  enum {
+    Select,
+    Display
+  } state;
 };
 
 #endif

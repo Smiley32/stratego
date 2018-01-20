@@ -22,6 +22,20 @@
 #include <thread>
 #include <sstream>
 
+#define DEFAULT_WIDTH 960
+#define DEFAULT_HEIGHT 900
+
+double get_current_scale(gf::Window &window) {
+  double scale = (double)window.getSize().x / DEFAULT_WIDTH;
+  std::cout << "Current scale : " << scale << std::endl;
+  return scale;
+}
+
+/// Calcule la position en fonction de scale
+gf::Vector2u get_current_position(gf::Vector2u default_pos, double scale) {
+  return {(unsigned)(scale * default_pos.x), (unsigned)(scale * default_pos.y)};
+}
+
 #include "c_grid.h"
 
 #include "packet.h"
@@ -198,11 +212,13 @@ bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui) {
  * 
  * @return bool true si l'utilisateur a demandé à quitter
  */
-bool displayStateUi(gf::RenderWindow &renderer, gf::UI &ui, State state) {
+bool displayStateUi(gf::Window &window, gf::RenderWindow &renderer, gf::UI &ui, State state) {
   bool ret = false;
 
+  gf::RectF rect(DEFAULT_GRID_X * get_current_scale(window), 0, 640 * get_current_scale(window), 100);
+
   if(state == State::Win) {
-    if(ui.begin("Victoire !", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+    if(ui.begin("Victoire !", rect, gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(25, 1);
 
@@ -212,7 +228,7 @@ bool displayStateUi(gf::RenderWindow &renderer, gf::UI &ui, State state) {
     ui.end();
     renderer.draw(ui);
   } else if(state == State::Lose) {
-    if(ui.begin("Défaite...", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+    if(ui.begin("Défaite...", rect, gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(25, 1);
 
@@ -224,7 +240,7 @@ bool displayStateUi(gf::RenderWindow &renderer, gf::UI &ui, State state) {
   }
 
   if(state == State::WaitAnswer) {
-    if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+    if(ui.begin("Pause", rect, gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(25, 1);
 
@@ -236,7 +252,7 @@ bool displayStateUi(gf::RenderWindow &renderer, gf::UI &ui, State state) {
   }
 
   if(state == State::WaitUpdate || state == State::WaitPlayer) {
-    if(ui.begin("Pause", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+    if(ui.begin("Pause", rect, gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(25, 1);
 
@@ -253,7 +269,7 @@ bool displayStateUi(gf::RenderWindow &renderer, gf::UI &ui, State state) {
 
   if(state == State::FatalError) {
     // Afficher la fenêtre d'UI
-    if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
+    if(ui.begin("Erreur", rect, gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(25, 1);
 
@@ -276,7 +292,7 @@ int main(int argc, char *argv[]) {
   srand(time(NULL));
 
   // Initialisation
-  static constexpr gf::Vector2u ScreenSize(768, 700);
+  static constexpr gf::Vector2u ScreenSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
   gf::Window window("Petit jeu en réseau (client)", ScreenSize);
   window.setFramerateLimit(60);
   gf::RenderWindow renderer(window);
@@ -301,11 +317,11 @@ int main(int argc, char *argv[]) {
   // Grille du jeu
   Grid g(resources);
   g.createGrid();
-  g.setPosition({32, 0});
+  g.setPosition(get_current_position({DEFAULT_GRID_X, DEFAULT_GRID_Y}, get_current_scale(window)));
   entities.addEntity(g);
 
   Selection s(resources);
-  s.setPosition({0, g.getPosition().y + (10 * g.TileSize)});
+  s.setPosition(get_current_position({DEFAULT_SELECT_X, DEFAULT_SELECT_Y}, get_current_scale(window)));
   entities.addEntity(s);
 
   // Boucle de jeu
@@ -348,8 +364,6 @@ int main(int argc, char *argv[]) {
   while(state != State::Connected && window.isOpen()) {
     gf::Event event;
 
-    std::cout << window.getSize().x << window.getSize().y << std::endl;
-
     while(window.pollEvent(event)) {
       actions.processEvent(event);
       ui.processEvent(event);
@@ -391,7 +405,7 @@ int main(int argc, char *argv[]) {
 
     // Fenetre de selection du serveur
     // Afficher la fenêtre d'UI
-    if(ui.begin("Serveur", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+    if(ui.begin("Serveur", gf::RectF(0, 0, window.getSize().x, window.getSize().y), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(30, 1);
 
@@ -620,6 +634,9 @@ int main(int argc, char *argv[]) {
       }
 
       // Update
+      g.update_scale(get_current_scale(window));
+      s.update_scale(get_current_scale(window));
+
       gf::Time time = clock.restart();
       g.update(time);
       // entities.update(time);
@@ -732,7 +749,7 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      if(displayStateUi(renderer, ui, state)) {
+      if(displayStateUi(window, renderer, ui, state)) {
         state = State::Exit;
       }
 
@@ -820,6 +837,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Update
+    g.update_scale(get_current_scale(window));
+    s.update_scale(get_current_scale(window));
+
     gf::Time time = clock.restart();
     g.update(time);
     // entities.update(time);
@@ -917,7 +937,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if(displayStateUi(renderer, ui, state)) {
+    if(displayStateUi(window, renderer, ui, state)) {
       state = State::Exit;
     }
 
