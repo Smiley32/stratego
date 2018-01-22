@@ -9,6 +9,8 @@
 #include <gf/Action.h>
 #include <gf/EntityContainer.h>
 #include <gf/UI.h>
+#include <gf/ViewContainer.h>
+#include <gf/Views.h>
 
 #include <gf/Sleep.h>
 #include <gf/Time.h>
@@ -343,6 +345,11 @@ int main(int argc, char *argv[]) {
   gf::Queue<boost::array<char, 128>> messages;
   tcp::socket *socket;
 
+  gf::ViewContainer views;
+  gf::ScreenView screenView;
+  views.addView(screenView);
+  views.setInitialScreenSize({DEFAULT_WIDTH, DEFAULT_HEIGHT});
+
   /******************************************************************/
   /***
   /***
@@ -367,6 +374,7 @@ int main(int argc, char *argv[]) {
     while(window.pollEvent(event)) {
       actions.processEvent(event);
       ui.processEvent(event);
+      views.processEvent(event);
     }
 
     if(closeWindowAction.isActive()) {
@@ -387,6 +395,7 @@ int main(int argc, char *argv[]) {
 
     // Draw
     renderer.clear();
+    renderer.setView(screenView);
 
     // UI
     if(displayEscUi) {
@@ -490,6 +499,7 @@ int main(int argc, char *argv[]) {
       // Entrées
       while(window.pollEvent(event)) {
         actions.processEvent(event);
+        views.processEvent(event);
 
         if(event.type == gf::EventType::MouseMoved) {
           // std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
@@ -634,6 +644,7 @@ int main(int argc, char *argv[]) {
       }
 
       // Update
+      // TODO: mettre dans la fonction callback de views
       g.update_scale(get_current_scale(window));
       s.update_scale(get_current_scale(window));
 
@@ -643,6 +654,7 @@ int main(int argc, char *argv[]) {
 
       // Draw
       renderer.clear();
+      renderer.setView(screenView);
       entities.render(renderer);
 
       // Réception des messages
