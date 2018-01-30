@@ -1,6 +1,8 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#include <iostream>
+#include <string>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <stdbool.h>
