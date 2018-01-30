@@ -47,6 +47,9 @@ int main(int argc, char *argv[])
   boost::system::error_code error;
   tcp::socket first_client(io_service);
   tcp::socket second_client(io_service);
+  Message new_message;
+  Movement new_movement;
+  Result new_result;
 
   boost::array<char, 128> buf;
   s_grid our_grid;
@@ -93,12 +96,8 @@ int main(int argc, char *argv[])
 
       gf::Log::info("\nFirst client connection\n");
 
-      p.append(0);
-      p.append(1);
-      gf::Log::info("\n\t0_1\n");
-
-      // Envoi du message d'acceptation au client
-      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+      new_message = create_accept_message(true);
+      send_message(first_client, new_message);
 
       // Attente du second client
       gf::Log::info("\nWaiting for the second client\n");
@@ -107,11 +106,7 @@ int main(int argc, char *argv[])
 
       gf::Log::info("\nSecond client connection\n");
 
-      // Envoi d'un message d'acceptation au client
-      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-
-      p.clear();
-      gf::Log::info("\n\t0_1\n");
+      send_message(second_client, new_message);
     }
     else
     {
@@ -122,60 +117,42 @@ int main(int argc, char *argv[])
 
       gf::Log::info("\nSecond client connection\n");
 
-      p.append(0);
-      p.append(1);
-
-      // Envoi d'un message d'acceptation au client
-      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-
-      gf::Log::info("\n\t0_1\n");
+      new_message = create_accept_message(true);
+      send_message(second_client, new_message);
 
       // Attente du premier client
       gf::Log::info("\nWaiting for the first client\n");
 
       acceptor.accept(first_client);
 
-      gf::Log::info("\nFirst client connection\n");
-
-
-      gf::Log::info("\n\t0_1\n");
-
-      // Envoi du message d'acceptation au client
-      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-
-      p.clear();
+      send_message(first_client, new_message);
     }
 
     // Commemencement boucle de lecture des pièces
 
     our_grid.create_empty_grid();
 
-    // first_client == Blue
-    // second_client == Red
-
     // BOUCLE ACCEPTATION DES PIECES
     while (!our_grid.start_game())
     {
-      // SI TEAM ROUGE PAS ENCORE PRETE
+      // SI TEAM ROUGE PAS ENCORE PRETE (premier client)
       if (!red_team_rdy)
       {
-        buf = get_message_serv(&first_client);
+        new_message = get_message(first_client);
 
-        if (buf[0] != 1)
+        if (new_message.id != ID_message::Initiate)
         {
-          p.append(0); // Id du message (acceptation)
-          p.append(0); // 0 -> false ; 1 -> true
-          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+          new_message = create_accept_message(false);
+          send_message(first_client, new_message);
 
-          gf::Log::error("\nSignal Error: Expected 1 but get %c\n", buf[0]);
-          p.clear();
+          gf::Log::error("\nSignal Error: Expected 1 but get %d\n", (int) new_message.id);
           continue;
         }
 
-        for (size_t i = 1; i < 81; i = i + 2)
+        for (size_t i = 1; i <= PLAYER_MAX_PIECES; i = i + 1)
         {
-          first_p_pos = (int) (buf[i]);
-          first_p_value = (int) (buf[i+1]);
+          first_p_pos = new_message.data.initiate.pieces[i].pos;
+          first_p_value = new_message.data.initiate.pieces[i].value;
 
           get_vector_coord(&first_coo2D, first_p_pos, true);
           current_piece.rank = (Rank) first_p_value;
@@ -183,10 +160,8 @@ int main(int argc, char *argv[])
 
           if (!our_grid.create_piece(first_coo2D, current_piece))
           {
-            p.append(0);
-            p.append(0);
-            boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-            p.clear();
+            new_message = create_accept_message(false);
+            send_message(first_client, new_message);
             break;
           }
         }
@@ -194,89 +169,77 @@ int main(int argc, char *argv[])
 
         if (red_team_rdy)
         {
-          p.append(0);
-          p.append(1);
-          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          new_message = create_accept_message(true);
+          send_message(first_client, new_message);
         }
       }
 
       // SI TEAM BLEUE PAS ENCORE PRETE
       if (!blue_team_rdy)
       {
-        buf = get_message_serv(&second_client);
+        new_message = get_message(second_client);
 
-        if (buf[0] != 1)
+        if (new_message.id != ID_message::Initiate)
         {
-          p.append(0);
-          p.append(0);
-          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          gf::Log::error("\nSignal Error: Expected 1 but get %c\n", buf[0]);
-          p.clear();
+          new_message = create_accept_message(false);
+          send_message(second_client, new_message);
+
+          gf::Log::error("\nSignal Error: Expected 1 but get %d\n", (int) new_message.id);
           continue;
         }
 
-        for (size_t i = 1; i < 81; i = i + 2)
+        for (size_t i = 1; i <= PLAYER_MAX_PIECES; i = i + 1)
         {
-          first_p_pos = (int) (buf[i]);
-          first_p_value = (int) (buf[i+1]);
+          first_p_pos = new_message.data.initiate.pieces[i].pos;
+          first_p_value = new_message.data.initiate.pieces[i].value;
 
-          get_vector_coord(&first_coo2D, first_p_pos, false);
+          get_vector_coord(&first_coo2D, first_p_pos, true);
           current_piece.rank = (Rank) first_p_value;
           current_piece.side = Side::Blue;
 
           if (!our_grid.create_piece(first_coo2D, current_piece))
           {
-            p.append(0);
-            p.append(0);
-            boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-            p.clear();
+            new_message = create_accept_message(false);
+            send_message(second_client, new_message);
             break;
           }
         }
         blue_team_rdy = our_grid.blue_t_ok();
 
         if(blue_team_rdy) {
-          p.append(0);
-          p.append(1);
-          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          new_message = create_accept_message(true);
+          send_message(second_client, new_message);
         }
       }
     }
 
     // SIGNAL LANCEMENT DU JEU
     gf::Log::info("\nSignal 2 for start sent to both client\n");
-    p.append(2);
-    boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-    boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-    p.clear();
+
+    new_message = create_play_message();
+    send_message(first_client, new_message);
+    send_message(second_client, new_message);
 
     while (!our_grid.game_is_end())
     {
       // ACTION PREMIER JOUEUR
       gf::Log::info("\nSignal 2 for play sent to first client\n");
-      p.append(2);
-      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-      p.clear();
+      new_message = create_play_message();
+      send_message(first_client, new_message);
 
       accepted = false;
       while (!accepted)
       {
-        buf = get_message_serv(&first_client);
+        new_message = get_message(first_client);
 
-        if (buf[0] != 3)
-        {/*
-          p.append(0);
-          p.append(0);
-          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();*/
-          gf::Log::error("\nSignal Error: Expected 3 but get %c\n", buf[0]);
+        if (new_message.id != ID_message::Move)
+        {
+          gf::Log::error("\nSignal Error: Expected signal Move (3) but get %c\n", buf[0]);
           continue;
         }
 
-        first_p_pos = (int) (buf[1]);
-        second_p_pos = (int) (buf[2]);
+        first_p_pos = new_message.data.move.source;
+        second_p_pos = new_message.data.move.target;
 
         get_vector_coord(&first_coo2D, first_p_pos, true);
         get_vector_coord(&second_coo2D, second_p_pos, true);
@@ -305,146 +268,109 @@ int main(int argc, char *argv[])
 
         if (accepted)
         {
-          p.append(0);
-          p.append(1);
-          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          new_message = create_accept_message(true);
+          send_message(second_client, new_message);
         }
         else
         {
-          p.append(0);
-          p.append(0);
-          boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          new_message = create_accept_message(false);
+          send_message(second_client, new_message);
         }
       }
 
       // Envoie update premier client
-      p.append(4);
       gf::Log::info("\nSignal 4 for update sent to first client\n");
+      new_movement = create_movement(&first_coo2D, &second_coo2D, false);
 
       if (our_grid.had_collision())
       {
-        p.append(1);
-        p.append(get_pos_from_vector(&first_coo2D, false));
-        p.append(get_pos_from_vector(&second_coo2D, false));
-        p.append(second_p_value);
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true), second_p_value);
-
-        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
+        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
         {
-          p.append(2);
-          std::cout << "_2" << std::endl;
+          new_result = Result::Draw;
         }
         else
         {
-          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
+          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
           {
-            p.append(0);
-            std::cout << "_0" << std::endl;
+            new_result = Result::Lose;
           }
           else
           {
-            p.append(1);
-            std::cout << "_1" << std::endl;
+            new_result = Result::Win;
           }
         }
+
+        new_message = create_update_message(new_movement, second_p_value, new_result);
       }
       else
       {
-        p.append(0);
-        p.append(get_pos_from_vector(&first_coo2D, false));
-        p.append(get_pos_from_vector(&second_coo2D, false));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, false), get_pos_from_vector(&second_coo2D, false));
+        new_message = create_update_message(new_movement);
       }
 
-      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-      p.clear();
+      send_message(first_client, new_message);
 
       // Envoi update deuxième client
       gf::Log::info("\nSignal 4 for update sent to second client\n");
-      p.append(4);
-
+      new_movement = create_movement(&first_coo2D, &second_coo2D, true);
       if (our_grid.had_collision())
       {
-        p.append(1);
-        p.append(get_pos_from_vector(&first_coo2D, true));
-        p.append(get_pos_from_vector(&second_coo2D, true));
-        p.append(first_p_value);
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, true),get_pos_from_vector(&second_coo2D, true), first_p_value);
-
-        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
+        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
         {
-          p.append(2);
-          std::cout << "_2" << std::endl;
+          new_result = Result::Draw;
         }
         else
         {
-          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
+          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
           {
-            p.append(1);
-            std::cout << "_1" << std::endl;
+            new_result = Result::Lose;
           }
           else
           {
-            p.append(0);
-            std::cout << "_0" << std::endl;
+            new_result = Result::Win;
           }
         }
+
+        new_message = create_update_message(new_movement, first_p_value, new_result);
       }
       else
       {
-        p.append(0);
-        p.append(get_pos_from_vector(&first_coo2D, true));
-        p.append(get_pos_from_vector(&second_coo2D, true));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true));
+        new_message = create_update_message(new_movement);
       }
 
-      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-      p.clear();
+      send_message(second_client, new_message);
 
       if (our_grid.game_is_end())
       {
         gf::Log::info("\nThe first client won !\n");
-        gf::Log::info("\n\t5_1\n");
-        // Envoi signal de fin premier client
-        p.append(5);
-        p.append(1);
-        boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-        p.clear();
+        new_message = create_end_message(true);
+
+        send_message(first_client, new_message);
 
         gf::Log::info("\nThe second client lost !\n");
-        gf::Log::info("\n\t5_0\n");
-        // Envoi signal de fin deuxième client
-        p.append(5);
-        p.append(0);
-        boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-        p.clear();
+        new_message = create_end_message(false);
+
+        send_message(second_client, new_message);
       }
 
       // ACTION DEUXIEME JOUEUR
       gf::Log::info("\nSignal 2 for play sent to second client\n");
-      p.append(2);
-      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-      p.clear();
+      new_message = create_play_message();
+      send_message(second_client, new_message);
 
       accepted = false;
       while (!accepted)
       {
-        buf = get_message_serv(&second_client);
+        new_message = get_message(second_client);
 
-        if (buf[0] != 3)
-        {/*
-          p.append(0);
-          p.append(0);
-          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();*/
-          gf::Log::error("\nSignal Error: Expected 3 but get %c\n", buf[0]);
+        if (new_message.id != ID_message::Move)
+        {
+          gf::Log::error("\nSignal Error: Expected signal Move (3) but get %c\n", buf[0]);
           continue;
         }
 
-        first_p_pos = (int) (buf[1]);
-        second_p_pos = (int) (buf[2]);
+        first_p_pos = new_message.data.move.source;
+        second_p_pos = new_message.data.move.target;
+
         get_vector_coord(&first_coo2D, first_p_pos, false);
         get_vector_coord(&second_coo2D, second_p_pos, false);
         first_p_value = our_grid.get_value(first_coo2D);
@@ -470,118 +396,89 @@ int main(int argc, char *argv[])
 
         if (accepted)
         {
-          p.append(0);
-          p.append(1);
-          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          new_message = create_accept_message(true);
+          send_message(second_client, new_message);
         }
         else
         {
-          p.append(0);
-          p.append(0);
-          boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-          p.clear();
+          new_message = create_accept_message(false);
+          send_message(second_client, new_message);
         }
       }
 
       // Envoie update premier client
       gf::Log::info("\nSignal 4 for update sent to first client\n");
-      p.append(4);
+
+      new_movement = create_movement(&first_coo2D, &second_coo2D, false);
 
       if (our_grid.had_collision())
       {
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, false),get_pos_from_vector(&second_coo2D, false), second_p_value);
-        p.append(1);
-        p.append(get_pos_from_vector(&first_coo2D, false));
-        p.append(get_pos_from_vector(&second_coo2D, false));
-        p.append(first_p_value);
-
-        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
+        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
         {
-          p.append(2);
-          std::cout << "_2" << std::endl;
+          new_result = Result::Draw;
         }
         else
         {
-          if (first_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
+          if (first_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
           {
-            p.append(0);
-            std::cout << "_0" << std::endl;
+            new_result = Result::Lose;
           }
           else
           {
-            p.append(1);
-            std::cout << "_1" << std::endl;
+            new_result = Result::Win;
           }
         }
+
+        new_message = create_update_message(new_movement, first_p_value, new_result);
       }
       else
       {
-        p.append(0);
-        p.append(get_pos_from_vector(&first_coo2D, false));
-        p.append(get_pos_from_vector(&second_coo2D, false));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, false), get_pos_from_vector(&second_coo2D, false));
+        new_message = create_update_message(new_movement);
       }
 
-      boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-      p.clear();
+      send_message(first_client, new_message);
+
 
       // Envoi update deuxième client
       gf::Log::info("\nSignal 4 for update sent to second client\n");
-      p.append(4);
+
+      new_movement = create_movement(&first_coo2D, &second_coo2D, true);
 
       if (our_grid.had_collision())
       {
-        gf::Log::info("\n\t4_1_%d_%d_%d", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true), first_p_value);
-        p.append(1);
-        p.append(get_pos_from_vector(&first_coo2D, true));
-        p.append(get_pos_from_vector(&second_coo2D, true));
-        p.append(second_p_value);
-
-        if (13 == our_grid.get_value(first_coo2D) && 13 == our_grid.get_value(second_coo2D))
+        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
         {
-          p.append(2);
-          std::cout << "_2" << std::endl;
+          new_result = Result::Draw;
         }
         else
         {
-          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == 13)
+          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
           {
-            p.append(0);
-            std::cout << "_0" << std::endl;
+            new_result = Result::Lose;
           }
           else
           {
-            p.append(1);
-            std::cout << "_1" << std::endl;
+            new_result = Result::Win;
           }
         }
+
+        new_message = create_update_message(new_movement, second_p_value, new_result);
       }
       else
       {
-        p.append(0);
-        p.append(get_pos_from_vector(&first_coo2D, true));
-        p.append(get_pos_from_vector(&second_coo2D, true));
-        gf::Log::info("\n\t4_0_%d_%d\n", get_pos_from_vector(&first_coo2D, true), get_pos_from_vector(&second_coo2D, true));
+        new_message = create_update_message(new_movement);
       }
 
-      boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-      p.clear();
+      send_message(second_client, new_message);
 
       if (our_grid.game_is_end())
       {
         gf::Log::info("\nThe second client won !\n");
-        gf::Log::info("\n\t5_1\n");
-        p.append(5);
-        p.append(1);
-        boost::asio::write(second_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-        p.clear();
+        new_message = create_end_message(true);
+        send_message(second_client, new_message);
         gf::Log::info("\nThe first client loose !\n");
-        gf::Log::info("\n\t5_0\n");
-        p.append(5);
-        p.append(0);
-        boost::asio::write(first_client, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-        p.clear();
+        new_message = create_end_message(false);
+        send_message(second_client, new_message);
       }
     }
   }
