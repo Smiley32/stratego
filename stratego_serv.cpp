@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
           continue;
         }
 
-        for (size_t i = 1; i <= PLAYER_MAX_PIECES; i = i + 1)
+        for (size_t i = 0; i < PLAYER_MAX_PIECES; i++)
         {
           first_p_pos = new_message.data.initiate.pieces[i].pos;
           first_p_value = new_message.data.initiate.pieces[i].value;
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
           continue;
         }
 
-        for (size_t i = 1; i <= PLAYER_MAX_PIECES; i = i + 1)
+        for (size_t i = 0; i < PLAYER_MAX_PIECES; i++)
         {
           first_p_pos = new_message.data.initiate.pieces[i].pos;
           first_p_value = new_message.data.initiate.pieces[i].value;
