@@ -38,15 +38,19 @@ Message get_message(tcp::socket &socket)
     {
       new_message.id = ID_message::Accept;
       new_message.data.accept = msg[1] == 1;
+
+      gf::Log::info("\nReception message Accept (0) with value %d\n", new_message.data.accept);
     }
     break;
     case (int) ID_message::Initiate:
     {
       new_message.id = ID_message::Initiate;
       int piece_index = 0;
+      gf::Log::info("\nReception message Initiate (1) with values:\n");
       for(int i = 1; i < PLAYER_MAX_PIECES*2 + 1; i += 2) {
         new_message.data.initiate.pieces[piece_index].pos = (int)(msg[i]);
         new_message.data.initiate.pieces[piece_index].value = (int)(msg[i + 1]);
+        gf::Log::info("\t%d: Piece in %d with value %d\n", piece_index, new_message.data.initiate.pieces[piece_index].pos, new_message.data.initiate.pieces[piece_index].value);
         piece_index++;
       }
     }
@@ -54,6 +58,7 @@ Message get_message(tcp::socket &socket)
     case (int) ID_message::Play:
     {
       new_message.id = ID_message::Play;
+      gf::Log::info("\nReception message Play (2)\n");
     }
     break;
     case (int) ID_message::Move:
@@ -61,6 +66,7 @@ Message get_message(tcp::socket &socket)
       new_message.id = ID_message::Move;
       new_message.data.move.source = (int)(msg[1]);
       new_message.data.move.target = (int)(msg[2]);
+      gf::Log::info("\nReception message Move (3) from %d to %d\n", new_message.data.move.source, new_message.data.move.target);
     }
     break;
     case (int) ID_message::Update:
@@ -71,9 +77,15 @@ Message get_message(tcp::socket &socket)
       new_message.data.update.movement.source = msg[2];
       new_message.data.update.movement.target = msg[3];
 
-      if(new_message.data.update.collision) {
+      if(new_message.data.update.collision)
+      {
         new_message.data.update.enemy_value = msg[4];
         new_message.data.update.result = (Result)(msg[5]);
+        gf::Log::info("\nReception message Update (4) with collision, from %d to %d, with enemy %d, the result is %d\n", new_message.data.update.movement.source, new_message.data.update.movement.target, new_message.data.update.enemy_value, (int) new_message.data.update.result);
+      }
+      else
+      {
+        gf::Log::info("\nReception message Update (4) without collision, from %d to %d\n", new_message.data.update.movement.source, new_message.data.update.movement.target);
       }
     }
     break;
@@ -81,11 +93,13 @@ Message get_message(tcp::socket &socket)
     {
       new_message.id = ID_message::End;
       new_message.data.end = (Result)(msg[1]);
+      gf::Log::info("\nReception message End (5) with value %d\n", (int) new_message.data.end);
     }
     break;
     case (int) ID_message::Quit:
     {
       new_message.id = ID_message::Quit;
+      gf::Log::info("\nReception message Quit (6)\n");
     }
     break;
   }
