@@ -1,12 +1,24 @@
 #include "message.h"
 
-boost::array<char, 128> get_char_message(tcp::socket &socket, size_t &length) {
+void send_packet(tcp::socket* socket, Packet &p)
+{
+  char *data = (char*)p.getData();
+
+  // TODO ajout de logs
+
+  boost::system::error_code ignored_error;
+  boost::asio::write(*socket, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
+}
+
+boost::array<char, 128> get_char_message(tcp::socket &socket, size_t &length)
+{
   boost::array<char, 128> buf;
   boost::system::error_code error;
 
   length = socket.read_some(boost::asio::buffer(buf), error);
 
-  if(error) {
+  if(error)
+  {
     buf[0] = -1;
   }
 
@@ -79,6 +91,21 @@ Message get_message(tcp::socket &socket)
   }
 
   return new_message;
+}
+
+void send_message(tcp::socket &socket, Message our_message)
+{
+  Packet p;
+
+  char * buf;
+  memcpy(buf, &our_message, sizeof(our_message));
+
+  for (size_t i = 0; i < sizeof(our_message); i++)
+  {
+    p.append(buf[i]);
+  }
+
+  send_packet(&socket, p);
 }
 
 Message create_accept_message(bool accepted)

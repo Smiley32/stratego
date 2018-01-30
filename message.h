@@ -86,6 +86,21 @@ struct Message
 };
 
 /**
+ *  Fonction qui envoie un packet via une socket
+ *  @param tcp::socket *socket: la socket où envoyer le paquet
+ *  @param Packet &p: le paquet a envoyer
+ */
+void send_packet(tcp::socket* socket, Packet &p);
+
+/**
+ *  Fonction qui récupère un message sous forme de chaine de caractère
+ *  @param tcp::socket &socket: la socket d'où vient le message
+ *  @param size_t &length: variable qui sert à récupérer la taille de ce qui a été récupérer
+ *  @return boost::array<char, 128>: la chaine de caractère récupérée
+ */
+boost::array<char, 128> get_char_message(tcp::socket &socket, size_t &length);
+
+/**
  * Attends un message (ne gère pas la réception de messages concaténés)
  *
  * @param tcp::socket *socket Socket sur laquelle lire le message
@@ -93,7 +108,12 @@ struct Message
  */
 Message get_message(tcp::socket &socket);
 
-void send_message(tcp::socket &socket);
+/**
+ *  Envoie un message à travers une socket
+ *  @param tcp::socket &socket: la socket sur laquelle envoyer le message
+ *  @param Message our_message: le message a envoyer
+ */
+void send_message(tcp::socket &socket, Message our_message);
 
 /**
  * Fonction qui prépare la structure de message d'acceptation en vue de l'envoi
