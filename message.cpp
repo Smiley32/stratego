@@ -97,11 +97,14 @@ void send_message(tcp::socket &socket, Message our_message)
 {
   Packet p;
 
+  p.append((int) our_message.id);
+
   switch (our_message.id)
   {
     case ID_message::Accept:
     {
       gf::Log::info("\nSend signal Accept (0) with value %s\n", our_message.data.accept?"true":"false");
+      p.append(our_message.data.accept);
     }
     break;
     case ID_message::Initiate:
@@ -111,6 +114,8 @@ void send_message(tcp::socket &socket, Message our_message)
       for (size_t i = 0; i <= PLAYER_MAX_PIECES; i++)
       {
         gf::Log::info("\t%zu:Piece %d at position %d\n", i, our_message.data.initiate.pieces[i].value, our_message.data.initiate.pieces[i].pos);
+        p.append(our_message.data.initiate.pieces[i].value);
+        p.append(our_message.data.initiate.pieces[i].pos);
       }
     }
     break;
@@ -122,13 +127,21 @@ void send_message(tcp::socket &socket, Message our_message)
     case ID_message::Move:
     {
       gf::Log::info("\nSend signal Move (3) with source %d and target %d\n", our_message.data.move.source, our_message.data.move.target);
+      p.append(our_message.data.move.source);
+      p.append(our_message.data.move.target);
     }
     break;
     case ID_message::Update:
     {
+      p.append(our_message.data.update.collision);
+      p.append(our_message.data.update.movement.source);
+      p.append(our_message.data.update.movement.target);
+
       if (our_message.data.update.collision)
       {
         gf::Log::info("\nSend signal Update (4) with collision, movement is %d from %d, enemy piece is %d, the result for you is %d", our_message.data.update.movement.source, our_message.data.update.movement.target, our_message.data.update.enemy_value, (int) our_message.data.update.result);
+        p.append(our_message.data.update.enemy_value);
+        p.append((int) our_message.data.update.result);
       }
       else
       {
@@ -139,6 +152,7 @@ void send_message(tcp::socket &socket, Message our_message)
     case ID_message::End:
     {
       gf::Log::info("\nSend signal End (5), the result for you is %d\n", (int) our_message.data.end);
+      p.append((int) our_message.data.end);
     }
     break;
     case ID_message::Quit:
@@ -146,14 +160,6 @@ void send_message(tcp::socket &socket, Message our_message)
       gf::Log::info("\nSend signal Quit (6)\n");
     }
     break;
-  }
-
-  char * buf;
-  memcpy(buf, &our_message, sizeof(our_message));
-
-  for (size_t i = 0; i < sizeof(our_message); i++)
-  {
-    p.append(buf[i]);
   }
 
   send_packet(&socket, p);
