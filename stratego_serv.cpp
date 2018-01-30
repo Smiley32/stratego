@@ -6,10 +6,11 @@
 #include <boost/asio.hpp>
 
 #include "packet.h"
+#include "message.h"
 
 using boost::asio::ip::tcp;
 
-boost::array<char, 128> get_message(tcp::socket *socket)
+boost::array<char, 128> get_message_serv(tcp::socket *socket)
 {
   boost::array<char, 128> buf;
   boost::system::error_code error;
@@ -36,34 +37,6 @@ boost::array<char, 128> get_message(tcp::socket *socket)
 
   // std::string data(buf.begin(), buf.begin() + len);
   return buf;
-}
-
-
-void get_vector_coord(gf::Vector2u *coo2D, int piece_pos, bool inversed)
-{
-  // For the first client
-  if (!inversed)
-  {
-    coo2D->x = 9 - (piece_pos % 10);
-    coo2D->y = 9 - piece_pos / 10;
-  }
-  else
-  {
-    coo2D->x = piece_pos % 10;
-    coo2D->y = piece_pos / 10;
-  }
-}
-
-int get_pos_from_vector(gf::Vector2u *coo2D, bool inversed)
-{
-  if (!inversed)
-  {
-    return (9 - coo2D->x)+(9- coo2D->y)*10;
-  }
-  else
-  {
-    return coo2D->x + coo2D->y*10;
-  }
 }
 
 int main(int argc, char *argv[])
@@ -186,7 +159,7 @@ int main(int argc, char *argv[])
       // SI TEAM ROUGE PAS ENCORE PRETE
       if (!red_team_rdy)
       {
-        buf = get_message(&first_client);
+        buf = get_message_serv(&first_client);
 
         if (buf[0] != 1)
         {
@@ -231,7 +204,7 @@ int main(int argc, char *argv[])
       // SI TEAM BLEUE PAS ENCORE PRETE
       if (!blue_team_rdy)
       {
-        buf = get_message(&second_client);
+        buf = get_message_serv(&second_client);
 
         if (buf[0] != 1)
         {
@@ -290,7 +263,7 @@ int main(int argc, char *argv[])
       accepted = false;
       while (!accepted)
       {
-        buf = get_message(&first_client);
+        buf = get_message_serv(&first_client);
 
         if (buf[0] != 3)
         {/*
@@ -458,7 +431,7 @@ int main(int argc, char *argv[])
       accepted = false;
       while (!accepted)
       {
-        buf = get_message(&second_client);
+        buf = get_message_serv(&second_client);
 
         if (buf[0] != 3)
         {/*

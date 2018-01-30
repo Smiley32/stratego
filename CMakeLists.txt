@@ -17,6 +17,7 @@ add_executable(stratego_serv
   stratego_serv.cpp
   s_grid.cpp
   packet.cpp
+  message.cpp
 )
 add_executable(stratego_client
   stratego_client.cpp
