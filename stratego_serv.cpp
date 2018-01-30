@@ -190,15 +190,17 @@ int main(int argc, char *argv[])
 
         for (size_t i = 0; i < PLAYER_MAX_PIECES; i++)
         {
-          first_p_pos = new_message.data.initiate.pieces[i].pos;
-          first_p_value = new_message.data.initiate.pieces[i].value;
+          second_p_pos = new_message.data.initiate.pieces[i].pos;
+          second_p_value = new_message.data.initiate.pieces[i].value;
 
-          get_vector_coord(&first_coo2D, first_p_pos, true);
-          current_piece.rank = (Rank) first_p_value;
+          get_vector_coord(&second_coo2D, second_p_pos, false);
+          current_piece.rank = (Rank) second_p_value;
           current_piece.side = Side::Blue;
 
-          if (!our_grid.create_piece(first_coo2D, current_piece))
+
+          if (!our_grid.create_piece(second_coo2D, current_piece))
           {
+            std::cout << "bleee" << std::endl;
             new_message = create_accept_message(false);
             send_message(second_client, new_message);
             break;
@@ -269,12 +271,12 @@ int main(int argc, char *argv[])
         if (accepted)
         {
           new_message = create_accept_message(true);
-          send_message(second_client, new_message);
+          send_message(first_client, new_message);
         }
         else
         {
           new_message = create_accept_message(false);
-          send_message(second_client, new_message);
+          send_message(first_client, new_message);
         }
       }
 
