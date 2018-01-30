@@ -24,7 +24,7 @@
 #define DEFAULT_SECOND_BAR_X 864
 #define DEFAULT_SECOND_BAR_Y 36
 
-gf::Vector2u get_current_position(gf::Vector2u default_pos, double scale);
+gf::Vector2f get_current_position(gf::Vector2u default_pos, double scale);
 
 /**
  * Camp de la piece : Other pour les éléments neutres (lac / case vide)

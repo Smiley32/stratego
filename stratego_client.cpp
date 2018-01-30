@@ -34,8 +34,8 @@ double get_current_scale(gf::Window &window) {
 }
 
 /// Calcule la position en fonction de scale
-gf::Vector2u get_current_position(gf::Vector2u default_pos, double scale) {
-  return {(unsigned)(scale * default_pos.x), (unsigned)(scale * default_pos.y)};
+gf::Vector2f get_current_position(gf::Vector2u default_pos, double scale) {
+  return {(float)(scale * default_pos.x), (float)(scale * default_pos.y)};
 }
 
 #include "c_grid.h"

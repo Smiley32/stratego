@@ -80,7 +80,7 @@ public:
   void update_scale(double scale);
 
 private:
-  gf::Vector2u position;
+  gf::Vector2f position;
   double scale;
 
   /// Découvre une pièce ennemie (bleue)
