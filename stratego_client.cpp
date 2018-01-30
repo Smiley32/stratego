@@ -28,9 +28,8 @@
 #define DEFAULT_HEIGHT 900
 
 double get_current_scale(gf::Window &window) {
-  double scale = (double)window.getSize().x / DEFAULT_WIDTH;
-  std::cout << "Current scale : " << scale << std::endl;
-  return scale;
+  return 1;
+  
 }
 
 /// Calcule la position en fonction de scale
@@ -319,11 +318,11 @@ int main(int argc, char *argv[]) {
   // Grille du jeu
   Grid g(resources);
   g.createGrid();
-  g.setPosition(get_current_position({DEFAULT_GRID_X, DEFAULT_GRID_Y}, get_current_scale(window)));
+  g.setPosition({DEFAULT_GRID_X, DEFAULT_GRID_Y});
   entities.addEntity(g);
 
   Selection s(resources);
-  s.setPosition(get_current_position({DEFAULT_SELECT_X, DEFAULT_SELECT_Y}, get_current_scale(window)));
+  s.setPosition({DEFAULT_SELECT_X, DEFAULT_SELECT_Y});
   entities.addEntity(s);
 
   // Boucle de jeu
@@ -645,8 +644,8 @@ int main(int argc, char *argv[]) {
 
       // Update
       // TODO: mettre dans la fonction callback de views
-      g.update_scale(get_current_scale(window));
-      s.update_scale(get_current_scale(window));
+      // g.update_scale(get_current_scale(window));
+      // s.update_scale(get_current_scale(window));
 
       gf::Time time = clock.restart();
       g.update(time);
@@ -784,6 +783,21 @@ int main(int argc, char *argv[]) {
   /***
   /******************************************************************/
 
+  // Nos pièces restantes
+  Selection our_s(resources);
+  our_s.setPosition({DEFAULT_FIRST_BAR_X, DEFAULT_FIRST_BAR_Y});
+  our_s.makeVertical();
+  entities.addEntity(our_s);
+
+  // Les pièces restantes de l'ennemi
+  Selection your_s(resources);
+  your_s.setPosition({DEFAULT_SECOND_BAR_X, DEFAULT_SECOND_BAR_Y});
+  your_s.makeVertical();
+  your_s.makeBlueSide();
+  entities.addEntity(your_s);
+
+  entities.removeEntity(&s);
+
   state = State::WaitPlayer;
 
   bool waitForPlayer = true;
@@ -811,18 +825,15 @@ int main(int argc, char *argv[]) {
             gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
             if(coords.x != -1 && coords.y != -1) {
               if(g.isValidMove(coords)) {
-                // TODO: verif du mouvement
-                // if(g.moveSelectedPieceTo(coords)) {
-                  // Envoi au serveur du mouvement
-                  Packet p;
-                  p.append(3);
-                  // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
-                  p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
-                  p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
-                  send_packet(socket, p);
-                  
-                  state = State::WaitUpdateAnswer;
-                // }
+                // Envoi au serveur du mouvement
+                Packet p;
+                p.append(3);
+                // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
+                p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
+                p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
+                send_packet(socket, p);
+                
+                state = State::WaitUpdateAnswer;
               } else {
                 g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
               }
@@ -849,8 +860,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Update
-    g.update_scale(get_current_scale(window));
-    s.update_scale(get_current_scale(window));
+    // g.update_scale(get_current_scale(window));
+    // s.update_scale(get_current_scale(window));
+    // our_s.update_scale(get_current_scale(window));
+    // your_s.update_scale(get_current_scale(window));
 
     gf::Time time = clock.restart();
     g.update(time);
@@ -858,6 +871,7 @@ int main(int argc, char *argv[]) {
 
     // Draw
     renderer.clear();
+    renderer.setView(screenView);
     entities.render(renderer);
 
     // Réception des messages

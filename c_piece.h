@@ -111,9 +111,18 @@ public:
   /// Changer la proportion
   void update_scale(double new_scale);
 
+  /// Rend la barre verticale
+  void makeVertical();
+
+  /// Les pièces affichées sont les bleues
+  void makeBlueSide();
+
 private:
   /// Nombre aléatoire entre min et max
   int aleat(int min, int max);
+
+  bool vertical = false;
+  bool blueSide = false;
 
   gf::TileLayer m_layer;
   // Nombre de chaque pièce restant à placer

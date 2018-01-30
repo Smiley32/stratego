@@ -20,6 +20,14 @@ Selection::Selection(gf::ResourceManager& resources)
   }
 }
 
+void Selection::makeVertical() {
+  vertical = true;
+}
+
+void Selection::makeBlueSide() {
+  blueSide = true;
+}
+
 void Selection::setPosition(gf::Vector2f origin) {
   // m_layer.setPosition(origin);
   position = origin;
@@ -27,7 +35,7 @@ void Selection::setPosition(gf::Vector2f origin) {
 
 gf::Vector2f Selection::getPosition() {
   // return m_layer.getPosition();
-  return get_current_position(position, scale);
+  return position; //get_current_position(position, scale);
 }
 
 Piece Selection::getPiece(gf::Vector2u coords) {
@@ -120,14 +128,25 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
 
   gf::Sprite background;
   background.setTexture(background_texture);
-  background.setPosition({getPosition().x, getPosition().y});
+
+  if(vertical) {
+    background.setRotation(3.14159265358979323846 / 2);
+    background.setPosition({getPosition().x + TileSize, getPosition().y});
+  } else {
+    background.setPosition({getPosition().x, getPosition().y});
+  }
 
   background.setScale(scale);
   target.draw(background);
 
   gf::Texture texture;
-  texture.loadFromFile("pieces.png");
-
+  if(blueSide) {
+    std::cout << "bleu" << std::endl;
+    texture.loadFromFile("pieces_blue.png");
+  } else {
+    texture.loadFromFile("pieces.png");
+  }
+  
   gf::Font font;
   font.loadFromFile("16_DejaVuSans.ttf");
 
@@ -141,14 +160,23 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
     }
 
     gf::Sprite sprite(texture, gf::RectF( ((r * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((r * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
-    sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y});
+    if(vertical) {
+      sprite.setPosition({getPosition().x, getPosition().y + (x * TileSize)});
+    } else {
+      sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y});
+    }
+    
     sprite.setScale(scale);
     target.draw(sprite, states);
 
     // Affichage du nombre de pièces restantes
     gf::Text txt(std::to_string(nbPieces[x]), font);
     txt.setCharacterSize(20);
-    txt.setPosition({getPosition().x + (x * TileSize) + 20, getPosition().y + TileSize + 20});
+    if(vertical) {
+      txt.setPosition({getPosition().x + TileSize, getPosition().y + (x * TileSize) + 20});
+    } else {
+      txt.setPosition({getPosition().x + (x * TileSize) + 20, getPosition().y + TileSize + 20});
+    }
     target.draw(txt, states);
 
     // m_layer.setTile(coords, static_cast<int>(grid[x].rank));
@@ -156,14 +184,13 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
 
   // Affichage de la pièce selectionnée
   if(selected != -1) {
+    std::cout << "(x,y): (" << mouseCoords.x << "," << mouseCoords.y << ")" << std::endl;
     gf::Sprite sprite(texture, gf::RectF( ((selected * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((selected * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
     sprite.setPosition({(float)(mouseCoords.x - TileSize / 2), (float)(mouseCoords.y - TileSize / 2)});
-    sprite.setScale(scale);
+    // sprite.setScale(scale);
 
     target.draw(sprite, states);
   }
-
-  std::cout << "Test..." << std::endl;
 
   // target.draw(m_layer);
 }
