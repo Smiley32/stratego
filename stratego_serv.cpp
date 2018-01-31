@@ -324,11 +324,11 @@ int main(int argc, char *argv[])
         {
           if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
           {
-            new_result = Result::Lose;
+            new_result = Result::Win;
           }
           else
           {
-            new_result = Result::Win;
+            new_result = Result::Lose;
           }
         }
 
