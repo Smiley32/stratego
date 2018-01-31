@@ -413,7 +413,7 @@ int main(int argc, char *argv[]) {
 
     // Fenetre de selection du serveur
     // Afficher la fenêtre d'UI
-    if(ui.begin("Serveur", gf::RectF(0, 0, window.getSize().x, window.getSize().y), gf::UIWindow::Border | gf::UIWindow::Title)) {
+    if(ui.begin("Serveur", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(30, 1);
 
@@ -812,6 +812,7 @@ int main(int argc, char *argv[]) {
     while(window.pollEvent(event)) {
       actions.processEvent(event);
       ui.processEvent(event);
+      views.processEvent(event);
 
       if(event.type == gf::EventType::MouseButtonPressed) {
 
@@ -945,6 +946,8 @@ int main(int argc, char *argv[]) {
               state = State::FatalError;
               std::cout << "g.makeUpdate a échoué" << std::endl;
             }
+
+            // TODO: faire fonctionner les barres de pièces restantes
           }
 
           g.selected = {-1, -1};

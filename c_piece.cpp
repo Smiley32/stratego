@@ -136,7 +136,7 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
     background.setPosition({getPosition().x, getPosition().y});
   }
 
-  background.setScale(scale);
+  // background.setScale(scale);
   target.draw(background);
 
   gf::Texture texture;
@@ -166,7 +166,7 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
       sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y});
     }
     
-    sprite.setScale(scale);
+    // sprite.setScale(scale);
     target.draw(sprite, states);
 
     // Affichage du nombre de pièces restantes
