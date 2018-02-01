@@ -15,6 +15,8 @@
 #include <gf/Sleep.h>
 #include <gf/Time.h>
 
+#include "message.h"
+
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
@@ -58,6 +60,7 @@ boost::array<char, 128> get_message(tcp::socket *socket, size_t *length) {
   return buf;
 }
 
+/*
 void send_packet(tcp::socket* socket, Packet &p) {
   char *data = (char*)p.getData();
   std::cout << "Message envoyé : ";
@@ -68,7 +71,7 @@ void send_packet(tcp::socket* socket, Packet &p) {
   
   boost::system::error_code ignored_error;
   boost::asio::write(*socket, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-}
+}*/
 
 int connection(tcp::socket** socket, char *ip, char *port) {
   boost::asio::io_service io_service;
@@ -193,10 +196,11 @@ bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui) {
 
     if(ui.buttonLabel("Quitter")) {
       // Envoi d'un message de déconnexion au serveur
-      Packet p;
+      /*Packet p;
       p.append(6); // Le client quitte
-      send_packet(socket, p);
+      send_packet(socket, p);*/
       // window.close();
+      send_message(*socket, create_quit_message());
       ret = true;
     }
   }
@@ -581,9 +585,10 @@ int main(int argc, char *argv[]) {
 
       if(closeWindowAction.isActive()) {
         // Envoi d'un message de déconnexion au serveur
-        Packet p;
+        /*Packet p;
         p.append(6); // Le client quitte
-        send_packet(socket, p);
+        send_packet(socket, p);*/
+        send_message(*socket, create_quit_message());
         state = State::Exit;
       }
 
@@ -827,12 +832,16 @@ int main(int argc, char *argv[]) {
             if(coords.x != -1 && coords.y != -1) {
               if(g.isValidMove(coords)) {
                 // Envoi au serveur du mouvement
-                Packet p;
+                gf::Vector2u source = g.selected;
+                gf::Vector2u target = coords;
+                send_message(*socket, create_move_message(create_movement(&source, &target, false)));
+
+                /*Packet p;
                 p.append(3);
                 // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
                 p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
                 p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
-                send_packet(socket, p);
+                send_packet(socket, p);*/
                 
                 state = State::WaitUpdateAnswer;
               } else {

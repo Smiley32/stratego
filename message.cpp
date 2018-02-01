@@ -208,7 +208,7 @@ Message create_play_message()
 Message create_move_message(struct Movement movement)
 {
   Message new_message;
-  new_message.id = ID_message::Update;
+  new_message.id = ID_message::Move;
   new_message.data.move = movement;
 
   return new_message;
@@ -265,7 +265,7 @@ void get_vector_coord(gf::Vector2u *coo2D, int piece_pos, bool inversed)
   }
 }
 
-int get_pos_from_vector(gf::Vector2u *coo2D, bool inversed)
+int get_pos_from_vector(gf::Vector2u *coo2D, bool inversed = false)
 {
   if (!inversed)
   {
@@ -287,7 +287,7 @@ Resumed_piece create_resumed_piece(gf::Vector2u *coo2D, int value, bool inversed
   return new_piece;
 }
 
-Movement create_movement(gf::Vector2u *source, gf::Vector2u *target, bool inversed)
+Movement create_movement(gf::Vector2u *source, gf::Vector2u *target, bool inversed = false)
 {
   Movement new_movement;
 
