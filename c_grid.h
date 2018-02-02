@@ -66,7 +66,7 @@ public:
 
   /// Fais la mise à jour reçue par le serveur avec l'animation qui se doit
   // bool makeUpdate(gf::Vector2u firstCoords, Piece firstPiece, gf::Vector2u lastCoords, Piece lastPiece);
-  bool makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win);
+  bool makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win, Selection &our, Selection &your);
 
   /// Bouge la pièce (en l'animant) de first à last
   bool movePieceTo(gf::Vector2u first, gf::Vector2u last, bool reasignPieces);

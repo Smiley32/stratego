@@ -308,7 +308,7 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
   return false;
 }
 
-bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win) {
+bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win, Selection &our, Selection &your) {
   // TODO: verifs des coords
 
   // std::cout << "...(" << firstCoords.x << ";" << firstCoords.y << ") (" << lastCoords.x << ";" << lastCoords.y << ") " << (int)lastPieceBefore.rank << ";" << win << "!" << std::endl;
@@ -328,13 +328,27 @@ bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece l
   if(win == 1) {
     // Victoire -> la piece rouge gagne
     std::cout << "Victoire !" << std::endl;
+    // Rouge a gagné, on décompte du selecteur la pice ennemie
+    your.takeOnePiece((int)lastPieceBefore.rank);
     updateLastPiece = updateFirstPiece.side == Side::Blue ? grid[lastCoords.x][lastCoords.y] : updateFirstPiece;
   } else if(win == 0) {
     // Défaite -> la piece bleue gagne
     std::cout << "Défaite..." << std::endl;
+    // Il faut décompter la piece rouge
+    if(updateFirstPiece.side == Side::Red) {
+      our.takeOnePiece((int)updateFirstPiece.rank);
+    } else {
+      our.takeOnePiece((int)grid[lastCoords.x][lastCoords.y].rank);
+    }
     updateLastPiece = lastPieceBefore;
   } else {
     // Egalite
+    if(updateFirstPiece.side == Side::Red) {
+      our.takeOnePiece((int)updateFirstPiece.rank);
+    } else {
+      our.takeOnePiece((int)grid[lastCoords.x][lastCoords.y].rank);
+    }
+    your.takeOnePiece((int)lastPieceBefore.rank);
     std::cout << "Egalité" << std::endl;
     updateLastPiece.rank = Rank::Empty;
     updateLastPiece.side = Side::Other;

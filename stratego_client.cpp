@@ -951,7 +951,7 @@ int main(int argc, char *argv[]) {
             lastPieceBefore.side = Side::Other; // On ne sait pas : l'inverse de firstPiece
             int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
             
-            if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win)) {
+            if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win, our_s, your_s)) {
               state = State::FatalError;
               std::cout << "g.makeUpdate a échoué" << std::endl;
             }
