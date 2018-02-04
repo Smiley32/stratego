@@ -61,7 +61,7 @@ Piece Selection::getRandomPiece() {
     int x;
     do {
       x = aleat(0, NbPieces - 1);
-      std::cout << "nb aleat : " << x << std::endl;
+      // std::cout << "nb aleat : " << x << std::endl;
     } while(nbPieces[x] == 0);
     
     p.side = Side::Red;
@@ -88,7 +88,7 @@ void Selection::selectPiece(unsigned int pieceNumber) {
   if(pieceNumber < NbPieces && nbPieces[pieceNumber] > 0) {
     selected = pieceNumber;
     
-    std::cout << "Selected : " << nbPieces[pieceNumber] << std::endl;
+    // std::cout << "Selected : " << nbPieces[pieceNumber] << std::endl;
   } else {
     selected = -1;
   }
@@ -96,7 +96,7 @@ void Selection::selectPiece(unsigned int pieceNumber) {
 
 void Selection::takeOnePiece(unsigned int pieceNumber) {
   nbPieces[pieceNumber]--;
-  std::cout << "nbPieces restantes : " << nbPieces[pieceNumber] << std::endl;
+  // std::cout << "nbPieces restantes : " << nbPieces[pieceNumber] << std::endl;
 }
 
 void Selection::addPiece(Piece p) {
@@ -141,7 +141,6 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
 
   gf::Texture texture;
   if(blueSide) {
-    std::cout << "bleu" << std::endl;
     texture.loadFromFile("pieces_blue.png");
   } else {
     texture.loadFromFile("pieces.png");
@@ -184,7 +183,7 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
 
   // Affichage de la pièce selectionnée
   if(selected != -1) {
-    std::cout << "(x,y): (" << mouseCoords.x << "," << mouseCoords.y << ")" << std::endl;
+    // std::cout << "(x,y): (" << mouseCoords.x << "," << mouseCoords.y << ")" << std::endl;
     gf::Sprite sprite(texture, gf::RectF( ((selected * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((selected * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
     sprite.setPosition({(float)(mouseCoords.x - TileSize / 2), (float)(mouseCoords.y - TileSize / 2)});
     // sprite.setScale(scale);

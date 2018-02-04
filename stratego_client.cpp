@@ -127,7 +127,7 @@ void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<boost
       size_t readLength;
       boost::array<char, 128> msg = get_message(socket, &readLength);
 
-      std::cout << "Id du message : " << (int)msg[0] << " ; taille " << readLength << std::endl;
+      // std::cout << "Id du message : " << (int)msg[0] << " ; taille " << readLength << std::endl;
       if(readLength == 0) {
         continue;
       }
@@ -159,16 +159,16 @@ void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<boost
             length = 1;
             break;
         }
-        for(size_t i = 0; i < length; i++) {
+        /*for(size_t i = 0; i < length; i++) {
           std::cout << (int)msg[i] << ";";
         }
         std::cout << std::endl;
-        std::cout << "Ajout du message" << (int)msg[0] << std::endl;
+        std::cout << "Ajout du message" << (int)msg[0] << std::endl;*/
         messages->push(msg);
 
         continuer = false;
         if(readLength > length) {
-          std::cout << "Il y a une concaténation..." << std::endl;
+          // std::cout << "Il y a une concaténation..." << std::endl;
           // On décale msg de la longueur de length
           for(size_t i = length; i < 128; i++) {
             msg[i - length] = msg[i];
@@ -337,7 +337,7 @@ int main(int argc, char *argv[]) {
   gf::Font font;
   bool loaded = font.loadFromFile("16_DejaVuSans.ttf");
   if(!loaded) {
-    std::cout << "Impossible de charger la police" << std::endl;
+    // std::cout << "Impossible de charger la police" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -518,7 +518,7 @@ int main(int argc, char *argv[]) {
             // std::cout << "Case : ( " << c.x << " , " << c.y << " )" << std::endl;
             if(c.x != -1 && c.y != -1) {
               Piece p = s.getPiece({(unsigned)c.x, (unsigned)c.y});
-              std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
+              // std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
               // On sélectionne la pièce voulue
               s.selectPiece((unsigned int)p.rank);
             }
@@ -530,7 +530,7 @@ int main(int argc, char *argv[]) {
               if(s.selected != -1) {
                 // On peut alors regarder la case cliquée
                 Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
-                std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
+                // std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
 
                 Piece newPiece;
                 newPiece.rank = Rank(s.selected);
@@ -539,9 +539,9 @@ int main(int argc, char *argv[]) {
                 if(g.setPiece(c, newPiece)) {
                   s.takeOnePiece(s.selected);
                   s.selected = -1;
-                } else {
+                }/* else {
                   std::cout << "Erreur" << std::endl;
-                }
+                }*/
               } else { // Pas de pièce sélectionnée, on déplace la pièce qui était à cette case
 
                 // Suppression de la pièce
@@ -632,7 +632,7 @@ int main(int argc, char *argv[]) {
           for(int y = 6; y <= 9; y++) {
             for(int x = 0; x < 10; x++) {
               gf::Vector2u coords = {x, y};
-              std::cout << "(" << x << "," << y << ") - no " << (int)(g.getPiece(coords).rank) << std::endl;
+              // std::cout << "(" << x << "," << y << ") - no " << (int)(g.getPiece(coords).rank) << std::endl;
               init.pieces[nb--] = create_resumed_piece(&coords, (int)(g.getPiece(coords).rank), false);
             }
           }
@@ -683,11 +683,11 @@ int main(int argc, char *argv[]) {
       bool msgLu = messages.poll(msg);
 
       if(msgLu) {
-        std::cout << "Message " << (int)msg[0] << std::endl;
+        // std::cout << "Message " << (int)msg[0] << std::endl;
         switch(msg[0]) { // Type du message
           case -1:
             // Erreur provenant du serveur
-            std::cout << "L'erreur vient du serveur" << std::endl;
+            // std::cout << "L'erreur vient du serveur" << std::endl;
             state = State::FatalError;
             break;
           case 0: // Acceptation du serveur
@@ -844,7 +844,7 @@ int main(int argc, char *argv[]) {
               continue;
             }
 
-            std::cout << "clic !" << std::endl;
+            // std::cout << "clic !" << std::endl;
             gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
             if(coords.x != -1 && coords.y != -1) {
               if(g.isValidMove(coords)) {
@@ -907,18 +907,18 @@ int main(int argc, char *argv[]) {
     bool msgLu = messages.poll(msg);
 
     if(msgLu && state != State::FatalError) {
-      std::cout << "Message lu : " << (int)msg[0] << std::endl;
+      // std::cout << "Message lu : " << (int)msg[0] << std::endl;
       switch(msg[0]) { // Type du message
         case -1:
           // Erreur provenant du serveur
           state = State::FatalError;
-          std::cout << "L'erreur vient du serveur" << std::endl;
+          // std::cout << "L'erreur vient du serveur" << std::endl;
           break;
         case 0: // Acceptation du serveur
           if(!msg[1]) {
             // Le mouvement n'a pas été accepté
             state = State::FatalError;
-            std::cout << "Le mouvement a été refusé par le serveur" << std::endl;
+            // std::cout << "Le mouvement a été refusé par le serveur" << std::endl;
           } else if(state == State::WaitAnswer) {
             state = State::WaitUpdate;
           } else if(state == State::WaitUpdateAnswer) {
@@ -935,7 +935,7 @@ int main(int argc, char *argv[]) {
         case 4: // Update
           if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
             state = State::FatalError;
-            std::cout << "Le message update est arrivé alors qu'il n'étais pas attendu" << std::endl;
+            // std::cout << "Le message update est arrivé alors qu'il n'étais pas attendu" << std::endl;
             break;
           }
 
@@ -958,7 +958,7 @@ int main(int argc, char *argv[]) {
             // On peut alors effectuer le mouvement sans problème
             if(!g.movePieceTo(firstCoords, lastCoords, true)) {
               state = State::FatalError;
-              std::cout << "g.movePieceTo a échoué" << std::endl;
+              // std::cout << "g.movePieceTo a échoué" << std::endl;
             }
           } else {
             // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
@@ -971,7 +971,7 @@ int main(int argc, char *argv[]) {
             
             if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win, our_s, your_s)) {
               state = State::FatalError;
-              std::cout << "g.makeUpdate a échoué" << std::endl;
+              // std::cout << "g.makeUpdate a échoué" << std::endl;
             }
 
             // TODO: faire fonctionner les barres de pièces restantes
