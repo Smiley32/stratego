@@ -125,11 +125,11 @@ void send_message(tcp::socket &socket, Message our_message)
     {
       gf::Log::info("\nSend signal Initiate (1) with values:\n");
 
-      for (size_t i = 0; i <= PLAYER_MAX_PIECES; i++)
+      for (size_t i = 0; i < PLAYER_MAX_PIECES; i++)
       {
         gf::Log::info("\t%zu:Piece %d at position %d\n", i, our_message.data.initiate.pieces[i].value, our_message.data.initiate.pieces[i].pos);
-        p.append(our_message.data.initiate.pieces[i].value);
         p.append(our_message.data.initiate.pieces[i].pos);
+        p.append(our_message.data.initiate.pieces[i].value);
       }
     }
     break;

@@ -621,15 +621,29 @@ int main(int argc, char *argv[]) {
           customError = CustomError::NotFinished;
         } else {
           // Envoi des pièces au serveur
-          Packet p;
-
+          // Packet p;
           // Id du message
-          p.append(1);
+          // p.append(1);
 
-          // std::cout << "packet complet '";
+          Initialize init;
 
+          int nb = PLAYER_MAX_PIECES - 1;
+          // Envoi des pièces (4 dernières lignes)
+          for(int y = 6; y <= 9; y++) {
+            for(int x = 0; x < 10; x++) {
+              gf::Vector2u coords = {x, y};
+              std::cout << "(" << x << "," << y << ") - no " << (int)(g.getPiece(coords).rank) << std::endl;
+              init.pieces[nb--] = create_resumed_piece(&coords, (int)(g.getPiece(coords).rank), false);
+            }
+          }
+          // Envoi du message
+          send_message(*socket, create_initiate_message(init));
+
+          /*
           // Ajoute de toutes les pièces au packet
-          for(int i = 0; i < 40; i++) {
+          for(int i = 0; i < PLAYER_MAX_PIECES; i++) {
+            init.pieces[i] = create_resumed_piece()
+
             p.append(i); // Numéro de la pièces (à partir du bas à droite, vers le haut à gauche)
             // std::cout << i;
             p.append((char)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank));
@@ -640,7 +654,10 @@ int main(int argc, char *argv[]) {
 
           // std::cout << "'" << std::endl;
 
-          send_packet(socket, p);
+          
+
+
+          send_packet(socket, p);*/
 
           // On attend maintenant la réponse :
           state = State::WaitAnswer;
@@ -854,9 +871,10 @@ int main(int argc, char *argv[]) {
 
     if(closeWindowAction.isActive() && state != State::FatalError) {
       // Envoi d'un message de déconnexion au serveur
-      Packet p;
+      /*Packet p;
       p.append(6); // Le client quitte
-      send_packet(socket, p);
+      send_packet(socket, p);*/
+      send_message(*socket, create_quit_message());
       window.close();
     }
 

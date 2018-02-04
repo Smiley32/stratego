@@ -486,7 +486,7 @@ std::vector<gf::Vector2u> Grid::getDestinations(gf::Vector2u coords) {
         }
       }
 
-      if(coords.x + 1 < GridSize) {
+      if(coords.y + 1 < GridSize) {
         if(grid[coords.x][coords.y + 1].rank == Rank::Empty || grid[coords.x][coords.y + 1].side == Side::Blue) {
           destinations.push_back({coords.x, coords.y + 1});
         }
