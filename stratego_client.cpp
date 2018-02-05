@@ -121,17 +121,20 @@ enum class CustomError {
 };
 
 // Thread qui va communiquer avec le serveur
-void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<boost::array<char, 128>>* messages) {
+void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<Message>* messages) {
     bool fatalError = false;
     while( !fatalError ) {
-      size_t readLength;
-      boost::array<char, 128> msg = get_message(socket, &readLength);
+      // size_t readLength;
+      // boost::array<char, 128> msg = get_message(socket, &readLength);
 
       // std::cout << "Id du message : " << (int)msg[0] << " ; taille " << readLength << std::endl;
-      if(readLength == 0) {
+      /*if(readLength == 0) {
         continue;
-      }
+      }*/
 
+      bool error = get_message(*socket, *messages);
+
+      /*
       // Taille attendue des messages
       size_t length;
       bool continuer = true;
@@ -159,11 +162,11 @@ void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<boost
             length = 1;
             break;
         }
-        /*for(size_t i = 0; i < length; i++) {
+        for(size_t i = 0; i < length; i++) {
           std::cout << (int)msg[i] << ";";
         }
         std::cout << std::endl;
-        std::cout << "Ajout du message" << (int)msg[0] << std::endl;*/
+        std::cout << "Ajout du message" << (int)msg[0] << std::endl;
         messages->push(msg);
 
         continuer = false;
@@ -177,7 +180,7 @@ void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<boost
           readLength -= length;
         }
         
-      } while(continuer && !fatalError);
+      } while(continuer && !fatalError);*/
     }
 }
 
@@ -345,7 +348,7 @@ int main(int argc, char *argv[]) {
 
   State state = State::Connexion;
 
-  gf::Queue<boost::array<char, 128>> messages;
+  gf::Queue<Message> messages;
   tcp::socket *socket;
 
   gf::ViewContainer views;
@@ -679,24 +682,23 @@ int main(int argc, char *argv[]) {
       entities.render(renderer);
 
       // Réception des messages
-      boost::array<char, 128> msg;
+      Message msg;
       bool msgLu = messages.poll(msg);
 
       if(msgLu) {
-        // std::cout << "Message " << (int)msg[0] << std::endl;
-        switch(msg[0]) { // Type du message
-          case -1:
+        switch(msg.id) { // Type du message
+          case ID_message::Error:
             // Erreur provenant du serveur
             // std::cout << "L'erreur vient du serveur" << std::endl;
             state = State::FatalError;
             break;
-          case 0: // Acceptation du serveur
+          case ID_message::Accept: // Acceptation du serveur
             if(state != State::WaitAnswer) {
-              if(!msg[1]) {
+              if(!msg.data.accept) {
                 customError = CustomError::Refused;
               }
             } else {
-              if(!msg[1]) {
+              if(!msg.data.accept) {
                 state = State::Placing;
                 customError = CustomError::WrongPlacing;
               } else {
@@ -903,19 +905,19 @@ int main(int argc, char *argv[]) {
     entities.render(renderer);
 
     // Réception des messages
-    boost::array<char, 128> msg;
+    Message msg;
     bool msgLu = messages.poll(msg);
 
     if(msgLu && state != State::FatalError) {
       // std::cout << "Message lu : " << (int)msg[0] << std::endl;
-      switch(msg[0]) { // Type du message
-        case -1:
+      switch(msg.id) { // Type du message
+        case ID_message::Error:
           // Erreur provenant du serveur
           state = State::FatalError;
           // std::cout << "L'erreur vient du serveur" << std::endl;
           break;
-        case 0: // Acceptation du serveur
-          if(!msg[1]) {
+        case ID_message::Accept: // Acceptation du serveur
+          if(!msg.data.accept) {
             // Le mouvement n'a pas été accepté
             state = State::FatalError;
             // std::cout << "Le mouvement a été refusé par le serveur" << std::endl;
@@ -925,14 +927,14 @@ int main(int argc, char *argv[]) {
             state = State::WaitUpdateAfterAnswer;
           }
           break;
-        case 2: // Jouer
+        case ID_message::Play: // Jouer
           if(state == State::WaitPlayer) {
             state = State::WaitUpdate;
           } else {
             state = State::Play;
           }
           break;
-        case 4: // Update
+        case ID_message::Update: // Update
           if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
             state = State::FatalError;
             // std::cout << "Le message update est arrivé alors qu'il n'étais pas attendu" << std::endl;
@@ -946,14 +948,16 @@ int main(int argc, char *argv[]) {
           }
 
           gf::Vector2u firstCoords;
-          firstCoords.x = msg[2] % g.GridSize;
-          firstCoords.y = (int)(msg[2] / g.GridSize);
+          get_vector_coord(&firstCoords, msg.data.update.movement.source, true);
+          /*firstCoords.x = msg[2] % g.GridSize;
+          firstCoords.y = (int)(msg[2] / g.GridSize);*/
 
           gf::Vector2u lastCoords;
-          lastCoords.x = msg[3] % g.GridSize;
-          lastCoords.y = (int)(msg[3] / g.GridSize);
+          get_vector_coord(&lastCoords, msg.data.update.movement.target, true);
+          /*lastCoords.x = msg[3] % g.GridSize;
+          lastCoords.y = (int)(msg[3] / g.GridSize);*/
 
-          if(msg[1] == 0) {
+          if(!msg.data.update.collision) {
             // Si le serveur indique qu'il n'y a pas eu de collision
             // On peut alors effectuer le mouvement sans problème
             if(!g.movePieceTo(firstCoords, lastCoords, true)) {
@@ -965,11 +969,13 @@ int main(int argc, char *argv[]) {
             
             // lastPieceBefore -> la valeur de la pièce ennemie
             Piece lastPieceBefore;
-            lastPieceBefore.rank = (Rank)( msg[4] );
+            lastPieceBefore.rank = (Rank)( msg.data.update.enemy_value );
             lastPieceBefore.side = Side::Other; // On ne sait pas : l'inverse de firstPiece
-            int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
             
-            if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, win, our_s, your_s)) {
+            
+            // int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
+
+            if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, msg.data.update.result, our_s, your_s)) {
               state = State::FatalError;
               // std::cout << "g.makeUpdate a échoué" << std::endl;
             }
@@ -980,8 +986,8 @@ int main(int argc, char *argv[]) {
           g.selected = {-1, -1};
 
           break;
-        case 5: // Signal de fin du jeu
-          state = msg[1] ? State::Win : State::Lose;
+        case ID_message::End: // Signal de fin du jeu
+          state = msg.data.end == Result::Win ? State::Win : State::Lose;
           break;
       }
     }

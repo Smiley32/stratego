@@ -308,7 +308,7 @@ bool Grid::moveSelectedPieceTo(gf::Vector2u coords) {
   return false;
 }
 
-bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win, Selection &our, Selection &your) {
+bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, Result win, Selection &our, Selection &your) {
   // TODO: verifs des coords
 
   // std::cout << "...(" << firstCoords.x << ";" << firstCoords.y << ") (" << lastCoords.x << ";" << lastCoords.y << ") " << (int)lastPieceBefore.rank << ";" << win << "!" << std::endl;
@@ -325,13 +325,13 @@ bool Grid::makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece l
   }
 
   // Calcul de la pièce restante
-  if(win == 1) {
+  if(win == Result::Win) {
     // Victoire -> la piece rouge gagne
     // std::cout << "Victoire !" << std::endl;
     // Rouge a gagné, on décompte du selecteur la pice ennemie
     your.takeOnePiece((int)lastPieceBefore.rank);
     updateLastPiece = updateFirstPiece.side == Side::Blue ? grid[lastCoords.x][lastCoords.y] : updateFirstPiece;
-  } else if(win == 0) {
+  } else if(win == Result::Lose) {
     // Défaite -> la piece bleue gagne
     // std::cout << "Défaite..." << std::endl;
     // Il faut décompter la piece rouge

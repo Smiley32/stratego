@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "c_piece.h"
+#include "message.h"
 
 #define DEFAULT_GRID_X 160
 #define DEFAULT_GRID_Y 100
@@ -66,7 +67,7 @@ public:
 
   /// Fais la mise à jour reçue par le serveur avec l'animation qui se doit
   // bool makeUpdate(gf::Vector2u firstCoords, Piece firstPiece, gf::Vector2u lastCoords, Piece lastPiece);
-  bool makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, int win, Selection &our, Selection &your);
+  bool makeUpdate(gf::Vector2u firstCoords, gf::Vector2u lastCoords, Piece lastPieceBefore, Result win, Selection &our, Selection &your);
 
   /// Bouge la pièce (en l'animant) de first à last
   bool movePieceTo(gf::Vector2u first, gf::Vector2u last, bool reasignPieces);

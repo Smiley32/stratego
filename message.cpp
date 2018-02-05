@@ -25,11 +25,7 @@ boost::array<char, 128> get_char_message(tcp::socket &socket, size_t &length)
   return buf;
 }
 
-Message get_message(tcp::socket &socket)
-{
-  size_t length;
-  boost::array<char, 128> msg = get_char_message(socket, length);
-
+static Message str_to_message(boost::array<char, 128> msg) {
   struct Message new_message;
 
   switch((int) msg[ID_INDEX])
@@ -105,6 +101,68 @@ Message get_message(tcp::socket &socket)
   }
 
   return new_message;
+}
+
+Message get_message(tcp::socket &socket)
+{
+  size_t length;
+  boost::array<char, 128> msg = get_char_message(socket, length);
+
+  if(length == -1) {
+    Message message;
+    message.id = ID_message::Error;
+    return message;
+  } else {
+    return str_to_message(msg);
+  }
+}
+
+bool get_message(tcp::socket &socket, gf::Queue<Message> &file) {
+  size_t read_length;
+  boost::array<char, 128> msg = get_char_message(socket, read_length);
+
+  size_t length;
+  bool continuer = true;
+  bool error = false;
+  do {
+    switch(msg[0]) {
+      case -1:
+        error = true;
+        break;
+      case 0:
+      case 5:
+        length = 2;
+        break;
+      case 1:
+      case 3:
+        length = 3;
+        break;
+      case 4:
+        if(msg[1]) {
+          length = 6;
+        } else {
+          length = 4;
+        }
+        break;
+      default:
+        length = 1;
+        break;
+    }
+    file.push(str_to_message(msg));
+
+    continuer = false;
+    if(read_length > length) {
+      // On décale msg de la longueur de length
+      for(size_t i = length; i < 128; i++) {
+        msg[i - length] = msg[i];
+      }
+      continuer = true;
+      read_length -= length;
+    }
+    
+  } while(continuer && !error);
+
+  return !error;
 }
 
 void send_message(tcp::socket &socket, Message our_message)

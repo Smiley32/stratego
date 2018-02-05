@@ -11,6 +11,7 @@
 #include <gf/RenderTarget.h>
 #include <gf/Curves.h>
 #include <gf/Color.h>
+#include <gf/Queue.h>
 #include "packet.h"
 
 
@@ -25,6 +26,7 @@ using boost::asio::ip::tcp;
 
 enum class ID_message : int
 {
+  Error = -1,
   Accept = 0,
   Initiate = 1,
   Play = 2,
@@ -105,10 +107,21 @@ boost::array<char, 128> get_char_message(tcp::socket &socket, size_t &length);
 /**
  * Attends un message (ne gère pas la réception de messages concaténés)
  *
- * @param tcp::socket *socket Socket sur laquelle lire le message
+ * @param tcp::socket &socket Socket sur laquelle lire le message
  * @return Message    Message retourné
  */
 Message get_message(tcp::socket &socket);
+
+/**
+ * Attend un message et l'ajoute à la file.
+ * 
+ * Dans le cas où plusieurs messages arrivent concaténés, les messages sont tous ajoutés à la file
+ * 
+ * @param tcp::socket &socket Socket sur laquelle lire le message
+ * @param gf::Queue<Message> &file File à laquelle ajouter les messages
+ * @return bool false si une erreur est survenue
+ */
+bool get_message(tcp::socket &socket, gf::Queue<Message> &file);
 
 /**
  *  Envoie un message à travers une socket
