@@ -30,6 +30,12 @@ static Message str_to_message(boost::array<char, 128> msg) {
 
   switch((int) msg[ID_INDEX])
   {
+    case (int) ID_message::Error:
+    {
+      new_message.id = ID_message::Error;
+      gf::Log::info("\nReception message Error (-1)\n");
+    }
+    break;
     case (int) ID_message::Accept:
     {
       new_message.id = ID_message::Accept;
@@ -159,7 +165,7 @@ bool get_message(tcp::socket &socket, gf::Queue<Message> &file) {
       continuer = true;
       read_length -= length;
     }
-    
+
   } while(continuer && !error);
 
   return !error;
@@ -173,6 +179,11 @@ void send_message(tcp::socket &socket, Message our_message)
 
   switch (our_message.id)
   {
+    case ID_message::Error:
+    {
+      gf::Log::info("\nSend signal Error (-1)\n");
+    }
+    break;
     case ID_message::Accept:
     {
       gf::Log::info("\nSend signal Accept (0) with value %s\n", our_message.data.accept?"true":"false");
@@ -305,6 +316,14 @@ Message create_quit_message()
 {
   Message new_message;
   new_message.id = ID_message::Quit;
+
+  return new_message;
+}
+
+Message create_error_message()
+{
+  Message new_message;
+  new_message.id = ID_message::Error;
 
   return new_message;
 }

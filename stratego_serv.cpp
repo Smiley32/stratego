@@ -142,6 +142,16 @@ int main(int argc, char *argv[])
 
         if (new_message.id != ID_message::Initiate)
         {
+          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
+          {
+            gf::Log::error("\nThe client has quited or crashed\n");
+            new_message = create_end_message(true);
+            send_message(second_client, new_message);
+            new_message = create_end_message(false);
+            send_message(first_client, new_message);
+
+            exit(-1);
+          }
           new_message = create_accept_message(false);
           send_message(first_client, new_message);
 
@@ -181,6 +191,16 @@ int main(int argc, char *argv[])
 
         if (new_message.id != ID_message::Initiate)
         {
+          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
+          {
+            gf::Log::error("\nThe client has quited or crashed\n");
+            new_message = create_end_message(true);
+            send_message(second_client, new_message);
+            new_message = create_end_message(false);
+            send_message(first_client, new_message);
+
+            exit(-1);
+          }
           new_message = create_accept_message(false);
           send_message(second_client, new_message);
 
@@ -236,6 +256,16 @@ int main(int argc, char *argv[])
 
         if (new_message.id != ID_message::Move)
         {
+          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
+          {
+            gf::Log::error("\nThe client has quited or crashed\n");
+            new_message = create_end_message(true);
+            send_message(second_client, new_message);
+            new_message = create_end_message(false);
+            send_message(first_client, new_message);
+
+            exit(-1);
+          }
           gf::Log::error("\nSignal Error: Expected signal Move (3) but get %c\n", buf[0]);
           continue;
         }
@@ -366,6 +396,16 @@ int main(int argc, char *argv[])
 
         if (new_message.id != ID_message::Move)
         {
+          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
+          {
+            gf::Log::error("\nThe client has quited or crashed\n");
+            new_message = create_end_message(true);
+            send_message(second_client, new_message);
+            new_message = create_end_message(false);
+            send_message(first_client, new_message);
+
+            exit(-1);
+          }
           gf::Log::error("\nSignal Error: Expected signal Move (3) but get %c\n", buf[0]);
           continue;
         }
