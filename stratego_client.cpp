@@ -35,21 +35,6 @@
 
 using boost::asio::ip::tcp;
 
-
-// Récupération d'un message du serveur
-boost::array<char, 128> get_message(tcp::socket *socket, size_t *length) {
-  boost::array<char, 128> buf;
-  boost::system::error_code error;
-
-  *length = socket->read_some(boost::asio::buffer(buf), error);
-
-  if(error) {
-    buf[0] = -1;
-  }
-
-  return buf;
-}
-
 int connection(tcp::socket** socket, char *ip, char *port) {
   boost::asio::io_service io_service;
   tcp::resolver resolver(io_service);
@@ -101,7 +86,7 @@ enum class CustomError {
 void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<Message>* messages) {
     bool fatalError = false;
     while( !fatalError ) {
-      fatalError = get_message(*socket, *messages);
+      fatalError = !get_message(*socket, *messages);
     }
 }
 
@@ -764,7 +749,7 @@ int main(int argc, char *argv[]) {
     Message msg;
     bool msgLu = messages.poll(msg);
 
-    if(msgLu && state != State::FatalError) {
+    if(msgLu && state != State::FatalError && state != State::Win && state != State::Lose) {
       switch(msg.id) { // Type du message
         case ID_message::Error:
           // Erreur provenant du serveur

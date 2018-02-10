@@ -520,7 +520,7 @@ int main(int argc, char *argv[])
         send_message(second_client, new_message);
         gf::Log::info("\nThe first client loose !\n");
         new_message = create_end_message(false);
-        send_message(second_client, new_message);
+        send_message(first_client, new_message);
       }
     }
   }

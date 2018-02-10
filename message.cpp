@@ -307,7 +307,7 @@ Message create_end_message(bool result)
 {
   Message new_message;
   new_message.id = ID_message::End;
-  new_message.data.accept = result;
+  new_message.data.end = result ? Result::Win : Result::Lose;
 
   return new_message;
 }
