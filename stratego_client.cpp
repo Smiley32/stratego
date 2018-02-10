@@ -124,63 +124,7 @@ enum class CustomError {
 void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<Message>* messages) {
     bool fatalError = false;
     while( !fatalError ) {
-      // size_t readLength;
-      // boost::array<char, 128> msg = get_message(socket, &readLength);
-
-      // std::cout << "Id du message : " << (int)msg[0] << " ; taille " << readLength << std::endl;
-      /*if(readLength == 0) {
-        continue;
-      }*/
-
-      bool error = get_message(*socket, *messages);
-
-      /*
-      // Taille attendue des messages
-      size_t length;
-      bool continuer = true;
-      do {
-        switch(msg[0]) {
-          case -1:
-            fatalError = true;
-            break;
-          case 0:
-          case 5:
-            length = 2;
-            break;
-          case 1:
-          case 3:
-            length = 3;
-            break;
-          case 4:
-            if(msg[1]) {
-              length = 6;
-            } else {
-              length = 4;
-            }
-            break;
-          default:
-            length = 1;
-            break;
-        }
-        for(size_t i = 0; i < length; i++) {
-          std::cout << (int)msg[i] << ";";
-        }
-        std::cout << std::endl;
-        std::cout << "Ajout du message" << (int)msg[0] << std::endl;
-        messages->push(msg);
-
-        continuer = false;
-        if(readLength > length) {
-          // std::cout << "Il y a une concaténation..." << std::endl;
-          // On décale msg de la longueur de length
-          for(size_t i = length; i < 128; i++) {
-            msg[i - length] = msg[i];
-          }
-          continuer = true;
-          readLength -= length;
-        }
-        
-      } while(continuer && !fatalError);*/
+      fatalError = get_message(*socket, *messages);
     }
 }
 
@@ -193,7 +137,7 @@ bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui) {
   bool ret = false;
 
   // Afficher la fenêtre d'UI
-  if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
+  if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
     ui.layoutRowDynamic(25, 1);
 
@@ -223,7 +167,7 @@ bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui) {
 bool displayStateUi(gf::Window &window, gf::RenderWindow &renderer, gf::UI &ui, State state) {
   bool ret = false;
 
-  gf::RectF rect(DEFAULT_GRID_X * get_current_scale(window), 0, 640 * get_current_scale(window), 100);
+  gf::RectF rect(DEFAULT_GRID_X, 0, 640, 100);
 
   if(state == State::Win) {
     if(ui.begin("Victoire !", rect, gf::UIWindow::Title)) {
@@ -351,10 +295,17 @@ int main(int argc, char *argv[]) {
   gf::Queue<Message> messages;
   tcp::socket *socket;
 
+  gf::RectF world(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
   gf::ViewContainer views;
   gf::ScreenView screenView;
+  gf::FitView fitView(world);
   views.addView(screenView);
+  views.addView(fitView);
   views.setInitialScreenSize({DEFAULT_WIDTH, DEFAULT_HEIGHT});
+
+  
+  gf::RectangleShape background(world);
+  background.setColor(gf::Color::Red);
 
   /******************************************************************/
   /***
@@ -379,6 +330,13 @@ int main(int argc, char *argv[]) {
 
     while(window.pollEvent(event)) {
       actions.processEvent(event);
+
+      if(event.type == gf::EventType::MouseMoved) {
+        std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
+        std::cout << "map(x,y): (" << renderer.mapPixelToCoords(event.mouseCursor.coords).x << "," << renderer.mapPixelToCoords(event.mouseCursor.coords).y << ")" << std::endl;
+        
+      }
+
       ui.processEvent(event);
       views.processEvent(event);
     }
@@ -401,6 +359,7 @@ int main(int argc, char *argv[]) {
 
     // Draw
     renderer.clear();
+
     renderer.setView(screenView);
 
     // UI
@@ -420,7 +379,7 @@ int main(int argc, char *argv[]) {
 
     // Fenetre de selection du serveur
     // Afficher la fenêtre d'UI
-    if(ui.begin("Serveur", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Border | gf::UIWindow::Title)) {
+    if(ui.begin("Serveur", gf::RectF(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
       ui.layoutRowDynamic(30, 1);
 
@@ -505,11 +464,10 @@ int main(int argc, char *argv[]) {
       // Entrées
       while(window.pollEvent(event)) {
         actions.processEvent(event);
-        views.processEvent(event);
 
         if(event.type == gf::EventType::MouseMoved) {
           // std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
-          s.updateMouseCoords(event.mouseCursor.coords);
+          s.updateMouseCoords(renderer.mapPixelToCoords(event.mouseCursor.coords));
         }
 
         if(event.type == gf::EventType::MouseButtonPressed && state == State::Placing && !displayEscUi) {
@@ -517,7 +475,7 @@ int main(int argc, char *argv[]) {
           // Clic gauche : choisir une pièce
           if(event.mouseButton.button == gf::MouseButton::Left) {
             // Récupération de la pièce dans le selecteur
-            gf::Vector2i c = s.getPieceCoordsFromMouse(event.mouseButton.coords);
+            gf::Vector2i c = s.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
             // std::cout << "Case : ( " << c.x << " , " << c.y << " )" << std::endl;
             if(c.x != -1 && c.y != -1) {
               Piece p = s.getPiece({(unsigned)c.x, (unsigned)c.y});
@@ -527,7 +485,7 @@ int main(int argc, char *argv[]) {
             }
 
             // Récupération de la case de la grille
-            c = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+            c = g.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
             if(c.x != -1 && c.y != -1) {
               // Vérification qu'une pièce est selectionné dans le sélecteur
               if(s.selected != -1) {
@@ -566,7 +524,7 @@ int main(int argc, char *argv[]) {
           // Clic droit : supprimer une pièce de la grille
           if(event.mouseButton.button == gf::MouseButton::Right) {
             // Récupération de la case de la grille
-            gf::Vector2i c = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+            gf::Vector2i c = g.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
             if(c.x != -1 && c.y != -1) {
               // On retire la pièce de la grille
               Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
@@ -580,9 +538,9 @@ int main(int argc, char *argv[]) {
               }
             }
           }
-
         }
 
+        views.processEvent(event);
         ui.processEvent(event);
       }
 
@@ -642,43 +600,19 @@ int main(int argc, char *argv[]) {
           // Envoi du message
           send_message(*socket, create_initiate_message(init));
 
-          /*
-          // Ajoute de toutes les pièces au packet
-          for(int i = 0; i < PLAYER_MAX_PIECES; i++) {
-            init.pieces[i] = create_resumed_piece()
-
-            p.append(i); // Numéro de la pièces (à partir du bas à droite, vers le haut à gauche)
-            // std::cout << i;
-            p.append((char)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank));
-            // std::cout << (int)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank);
-            // std::cout << "x : " << g.GridSize - (i % g.GridSize) - 1 << " ; y : " << g.GridSize - (i / g.GridSize) - 1 << std::endl;
-            // std::cout << (int)(g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}).rank) << std::endl;
-          }
-
-          // std::cout << "'" << std::endl;
-
-          
-
-
-          send_packet(socket, p);*/
-
           // On attend maintenant la réponse :
           state = State::WaitAnswer;
         }
       }
 
       // Update
-      // TODO: mettre dans la fonction callback de views
-      // g.update_scale(get_current_scale(window));
-      // s.update_scale(get_current_scale(window));
 
       gf::Time time = clock.restart();
       g.update(time);
-      // entities.update(time);
 
       // Draw
       renderer.clear();
-      renderer.setView(screenView);
+      renderer.setView(fitView);
       entities.render(renderer);
 
       // Réception des messages
@@ -689,7 +623,6 @@ int main(int argc, char *argv[]) {
         switch(msg.id) { // Type du message
           case ID_message::Error:
             // Erreur provenant du serveur
-            // std::cout << "L'erreur vient du serveur" << std::endl;
             state = State::FatalError;
             break;
           case ID_message::Accept: // Acceptation du serveur
@@ -711,6 +644,7 @@ int main(int argc, char *argv[]) {
         }
       }
 
+      renderer.setView(screenView);
       // UI
       if(state == State::FatalError) {
         // Afficher la fenêtre d'UI
@@ -735,23 +669,6 @@ int main(int argc, char *argv[]) {
           // Il va falloir quitter
           state = State::Exit;
         }
-        /*// Afficher la fenêtre d'UI
-        if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Minimizable | gf::UIWindow::Title)) {
-
-          ui.layoutRowDynamic(25, 1);
-
-          if(ui.buttonLabel("Quitter")) {
-            // Envoi d'un message de déconnexion au serveur
-            Packet p;
-            p.append(6); // Le client quitte
-            send_packet(p);
-            window.close();
-          }
-        }
-
-        ui.end();
-
-        renderer.draw(ui);*/
       }
 
       if(customError != CustomError::None) {
@@ -783,6 +700,8 @@ int main(int argc, char *argv[]) {
           renderer.draw(ui);
         }
       }
+
+      renderer.setView(fitView);
 
       if(displayStateUi(window, renderer, ui, state)) {
         state = State::Exit;
@@ -847,7 +766,7 @@ int main(int argc, char *argv[]) {
             }
 
             // std::cout << "clic !" << std::endl;
-            gf::Vector2i coords = g.getPieceCoordsFromMouse(event.mouseButton.coords);
+            gf::Vector2i coords = g.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
             if(coords.x != -1 && coords.y != -1) {
               if(g.isValidMove(coords)) {
                 // Envoi au serveur du mouvement
@@ -901,7 +820,7 @@ int main(int argc, char *argv[]) {
 
     // Draw
     renderer.clear();
-    renderer.setView(screenView);
+    renderer.setView(fitView);
     entities.render(renderer);
 
     // Réception des messages
@@ -993,12 +912,14 @@ int main(int argc, char *argv[]) {
     }
 
     // UI
+    renderer.setView(screenView);
     if(displayEscUi) {
       if(escFct(socket, renderer, ui)) {
         state = State::Exit;
       }
     }
 
+    renderer.setView(fitView);
     if(displayStateUi(window, renderer, ui, state)) {
       state = State::Exit;
     }
