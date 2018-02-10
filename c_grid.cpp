@@ -72,7 +72,24 @@ bool Grid::setPiece(gf::Vector2u coords, Piece p) {
     grid[coords.x][coords.y].rank = p.rank;
     grid[coords.x][coords.y].side = p.side;
     modif = true;
-    // std::cout << "..." << coords.x << "," << coords.y << " ; " << (int)grid[coords.x][coords.y].rank << std::endl;
+    return true;
+  }
+  return false;
+}
+
+bool Grid::changePiece(gf::Vector2u coords, Piece &p) {
+  if((int)(grid[coords.x][coords.y].rank) >= (int)(Rank::Bomb) && (int)(grid[coords.x][coords.y].rank) <= (int)(Rank::Flag) && coords.y >= 6) {
+    Piece tmp;
+    tmp.rank = p.rank;
+    tmp.side = p.side;
+    
+    p.rank = grid[coords.x][coords.y].rank;
+    p.side = grid[coords.x][coords.y].side;
+
+    grid[coords.x][coords.y].rank = tmp.rank;
+    grid[coords.x][coords.y].side = tmp.side;
+
+    modif = true;
     return true;
   }
   return false;

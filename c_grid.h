@@ -53,6 +53,9 @@ public:
   /// Définit une pièce dans la grille
   bool setPiece(gf::Vector2u coords, Piece p);
 
+  /// Remplace la pièce à la pos coords par p
+  bool changePiece(gf::Vector2u coords, Piece &p);
+
   /// Place une pièce à une position aléatoire disponnible
   void setPieceRandom(Piece p);
 

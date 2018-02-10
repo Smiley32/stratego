@@ -457,6 +457,13 @@ int main(int argc, char *argv[]) {
                 if(g.setPiece(c, newPiece)) {
                   s.takeOnePiece(s.selected);
                   s.selected = -1;
+                } else {
+                  // On tente de récupérer la pièce qui est dans la case pour l'échanger
+                  if(g.changePiece(c, newPiece)) {
+                    s.takeOnePiece(s.selected);
+                    s.addPiece(newPiece);
+                    s.selected = (int)(newPiece.rank);
+                  }
                 }
               } else { // Pas de pièce sélectionnée, on déplace la pièce qui était à cette case
 
