@@ -29,13 +29,11 @@ void Selection::makeBlueSide() {
 }
 
 void Selection::setPosition(gf::Vector2f origin) {
-  // m_layer.setPosition(origin);
   position = origin;
 }
 
 gf::Vector2f Selection::getPosition() {
-  // return m_layer.getPosition();
-  return position; //get_current_position(position, scale);
+  return position;
 }
 
 Piece Selection::getPiece(gf::Vector2u coords) {

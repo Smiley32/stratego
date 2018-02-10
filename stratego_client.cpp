@@ -29,16 +29,6 @@
 #define DEFAULT_WIDTH 960
 #define DEFAULT_HEIGHT 900
 
-double get_current_scale(gf::Window &window) {
-  return 1;
-  
-}
-
-/// Calcule la position en fonction de scale
-gf::Vector2f get_current_position(gf::Vector2u default_pos, double scale) {
-  return {(float)(scale * default_pos.x), (float)(scale * default_pos.y)};
-}
-
 #include "c_grid.h"
 
 #include "packet.h"
@@ -59,19 +49,6 @@ boost::array<char, 128> get_message(tcp::socket *socket, size_t *length) {
 
   return buf;
 }
-
-/*
-void send_packet(tcp::socket* socket, Packet &p) {
-  char *data = (char*)p.getData();
-  std::cout << "Message envoyé : ";
-  for(int i = 0; i < p.getDataSize(); i++) {
-    std::cout << (int)data[i] << ";";
-  }
-  std::cout << std::endl;
-  
-  boost::system::error_code ignored_error;
-  boost::asio::write(*socket, boost::asio::buffer(p.getData(), p.getDataSize()), boost::asio::transfer_all(), ignored_error);
-}*/
 
 int connection(tcp::socket** socket, char *ip, char *port) {
   boost::asio::io_service io_service;
@@ -143,10 +120,6 @@ bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui) {
 
     if(ui.buttonLabel("Quitter")) {
       // Envoi d'un message de déconnexion au serveur
-      /*Packet p;
-      p.append(6); // Le client quitte
-      send_packet(socket, p);*/
-      // window.close();
       send_message(*socket, create_quit_message());
       ret = true;
     }
@@ -268,7 +241,6 @@ int main(int argc, char *argv[]) {
 
   // Grille du jeu
   Grid g(resources);
-  g.createGrid();
   g.setPosition({DEFAULT_GRID_X, DEFAULT_GRID_Y});
   entities.addEntity(g);
 
@@ -284,7 +256,6 @@ int main(int argc, char *argv[]) {
   gf::Font font;
   bool loaded = font.loadFromFile("16_DejaVuSans.ttf");
   if(!loaded) {
-    // std::cout << "Impossible de charger la police" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -330,13 +301,6 @@ int main(int argc, char *argv[]) {
 
     while(window.pollEvent(event)) {
       actions.processEvent(event);
-
-      if(event.type == gf::EventType::MouseMoved) {
-        std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
-        std::cout << "map(x,y): (" << renderer.mapPixelToCoords(event.mouseCursor.coords).x << "," << renderer.mapPixelToCoords(event.mouseCursor.coords).y << ")" << std::endl;
-        
-      }
-
       ui.processEvent(event);
       views.processEvent(event);
     }
@@ -390,7 +354,6 @@ int main(int argc, char *argv[]) {
       ui.edit(gf::UIEditType::Simple, servPort, servPortLength, gf::UIEditFilter::Decimal);
 
       if(ui.buttonLabel("Confirmer")) {
-        // TODO : vérification des données entrées
         servIp[servIpLength] = '\0';
 
         try {
@@ -428,8 +391,6 @@ int main(int argc, char *argv[]) {
   }
 
   servIp[servIpLength] = '\0';
-  // std::cout << "serv ip : " << servIp << "(" << servIpLength << ")" << " port : " << servPort << std::endl;
-
   displayEscUi = false;
   escPressed = false;
 
@@ -466,7 +427,6 @@ int main(int argc, char *argv[]) {
         actions.processEvent(event);
 
         if(event.type == gf::EventType::MouseMoved) {
-          // std::cout << "(x,y): (" << event.mouseCursor.coords.x << "," << event.mouseCursor.coords.y << ")" << std::endl;
           s.updateMouseCoords(renderer.mapPixelToCoords(event.mouseCursor.coords));
         }
 
@@ -476,10 +436,8 @@ int main(int argc, char *argv[]) {
           if(event.mouseButton.button == gf::MouseButton::Left) {
             // Récupération de la pièce dans le selecteur
             gf::Vector2i c = s.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
-            // std::cout << "Case : ( " << c.x << " , " << c.y << " )" << std::endl;
             if(c.x != -1 && c.y != -1) {
               Piece p = s.getPiece({(unsigned)c.x, (unsigned)c.y});
-              // std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
               // On sélectionne la pièce voulue
               s.selectPiece((unsigned int)p.rank);
             }
@@ -491,7 +449,6 @@ int main(int argc, char *argv[]) {
               if(s.selected != -1) {
                 // On peut alors regarder la case cliquée
                 Piece p = g.getPiece({(unsigned)c.x, (unsigned)c.y});
-                // std::cout << "Piece : " << static_cast<int>(p.rank) << std::endl;
 
                 Piece newPiece;
                 newPiece.rank = Rank(s.selected);
@@ -500,9 +457,7 @@ int main(int argc, char *argv[]) {
                 if(g.setPiece(c, newPiece)) {
                   s.takeOnePiece(s.selected);
                   s.selected = -1;
-                }/* else {
-                  std::cout << "Erreur" << std::endl;
-                }*/
+                }
               } else { // Pas de pièce sélectionnée, on déplace la pièce qui était à cette case
 
                 // Suppression de la pièce
@@ -546,9 +501,6 @@ int main(int argc, char *argv[]) {
 
       if(closeWindowAction.isActive()) {
         // Envoi d'un message de déconnexion au serveur
-        /*Packet p;
-        p.append(6); // Le client quitte
-        send_packet(socket, p);*/
         send_message(*socket, create_quit_message());
         state = State::Exit;
       }
@@ -567,7 +519,6 @@ int main(int argc, char *argv[]) {
         
         Piece p = s.getRandomPiece();
         while(p.rank != Rank::Empty) {
-          // std::cout << "Une pièce en plus !" << std::endl;
           g.setPieceRandom(p);
           s.takeOnePiece((int)p.rank);
           
@@ -582,9 +533,6 @@ int main(int argc, char *argv[]) {
           customError = CustomError::NotFinished;
         } else {
           // Envoi des pièces au serveur
-          // Packet p;
-          // Id du message
-          // p.append(1);
 
           Initialize init;
 
@@ -593,7 +541,6 @@ int main(int argc, char *argv[]) {
           for(int y = 6; y <= 9; y++) {
             for(int x = 0; x < 10; x++) {
               gf::Vector2u coords = {x, y};
-              // std::cout << "(" << x << "," << y << ") - no " << (int)(g.getPiece(coords).rank) << std::endl;
               init.pieces[nb--] = create_resumed_piece(&coords, (int)(g.getPiece(coords).rank), false);
             }
           }
@@ -760,12 +707,10 @@ int main(int argc, char *argv[]) {
       if(event.type == gf::EventType::MouseButtonPressed) {
 
         if(event.mouseButton.button == gf::MouseButton::Left) {
-            // g.getPieceCoordsFromMouse(event.mouseCursor.coords);
             if(state != State::Play) {
               continue;
             }
 
-            // std::cout << "clic !" << std::endl;
             gf::Vector2i coords = g.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
             if(coords.x != -1 && coords.y != -1) {
               if(g.isValidMove(coords)) {
@@ -773,13 +718,6 @@ int main(int argc, char *argv[]) {
                 gf::Vector2u source = g.selected;
                 gf::Vector2u target = coords;
                 send_message(*socket, create_move_message(create_movement(&source, &target, false)));
-
-                /*Packet p;
-                p.append(3);
-                // g.getPiece({g.GridSize - (i % g.GridSize) - 1, g.GridSize - (i / g.GridSize) - 1}
-                p.append((g.GridSize - g.selected.y - 1) * g.GridSize + (g.GridSize - g.selected.x - 1));
-                p.append((g.GridSize - coords.y - 1) * g.GridSize + (g.GridSize - coords.x - 1));
-                send_packet(socket, p);*/
                 
                 state = State::WaitUpdateAnswer;
               } else {
@@ -792,9 +730,6 @@ int main(int argc, char *argv[]) {
 
     if(closeWindowAction.isActive() && state != State::FatalError) {
       // Envoi d'un message de déconnexion au serveur
-      /*Packet p;
-      p.append(6); // Le client quitte
-      send_packet(socket, p);*/
       send_message(*socket, create_quit_message());
       window.close();
     }
@@ -809,14 +744,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Update
-    // g.update_scale(get_current_scale(window));
-    // s.update_scale(get_current_scale(window));
-    // our_s.update_scale(get_current_scale(window));
-    // your_s.update_scale(get_current_scale(window));
 
     gf::Time time = clock.restart();
     g.update(time);
-    // entities.update(time);
 
     // Draw
     renderer.clear();
@@ -828,18 +758,15 @@ int main(int argc, char *argv[]) {
     bool msgLu = messages.poll(msg);
 
     if(msgLu && state != State::FatalError) {
-      // std::cout << "Message lu : " << (int)msg[0] << std::endl;
       switch(msg.id) { // Type du message
         case ID_message::Error:
           // Erreur provenant du serveur
           state = State::FatalError;
-          // std::cout << "L'erreur vient du serveur" << std::endl;
           break;
         case ID_message::Accept: // Acceptation du serveur
           if(!msg.data.accept) {
             // Le mouvement n'a pas été accepté
             state = State::FatalError;
-            // std::cout << "Le mouvement a été refusé par le serveur" << std::endl;
           } else if(state == State::WaitAnswer) {
             state = State::WaitUpdate;
           } else if(state == State::WaitUpdateAnswer) {
@@ -856,7 +783,6 @@ int main(int argc, char *argv[]) {
         case ID_message::Update: // Update
           if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
             state = State::FatalError;
-            // std::cout << "Le message update est arrivé alors qu'il n'étais pas attendu" << std::endl;
             break;
           }
 
@@ -868,20 +794,15 @@ int main(int argc, char *argv[]) {
 
           gf::Vector2u firstCoords;
           get_vector_coord(&firstCoords, msg.data.update.movement.source, true);
-          /*firstCoords.x = msg[2] % g.GridSize;
-          firstCoords.y = (int)(msg[2] / g.GridSize);*/
 
           gf::Vector2u lastCoords;
           get_vector_coord(&lastCoords, msg.data.update.movement.target, true);
-          /*lastCoords.x = msg[3] % g.GridSize;
-          lastCoords.y = (int)(msg[3] / g.GridSize);*/
 
           if(!msg.data.update.collision) {
             // Si le serveur indique qu'il n'y a pas eu de collision
             // On peut alors effectuer le mouvement sans problème
             if(!g.movePieceTo(firstCoords, lastCoords, true)) {
               state = State::FatalError;
-              // std::cout << "g.movePieceTo a échoué" << std::endl;
             }
           } else {
             // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
@@ -890,16 +811,10 @@ int main(int argc, char *argv[]) {
             Piece lastPieceBefore;
             lastPieceBefore.rank = (Rank)( msg.data.update.enemy_value );
             lastPieceBefore.side = Side::Other; // On ne sait pas : l'inverse de firstPiece
-            
-            
-            // int win = (int)(msg[5]); // 0 -> lose ; 1 -> win ; 2 -> draw
 
             if(!g.makeUpdate(firstCoords, lastCoords, lastPieceBefore, msg.data.update.result, our_s, your_s)) {
               state = State::FatalError;
-              // std::cout << "g.makeUpdate a échoué" << std::endl;
             }
-
-            // TODO: faire fonctionner les barres de pièces restantes
           }
 
           g.selected = {-1, -1};

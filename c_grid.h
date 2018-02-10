@@ -87,9 +87,6 @@ private:
   /// Découvre une pièce ennemie (bleue)
   bool discoverPiece(gf::Vector2u coords, Rank r);
 
-  /// Layer : n'est plus directement utilisé : à supprimer
-  gf::TileLayer m_layer;
-
   /// Retourne le tableau des cases accessibles depuis la case en paramètre
   std::vector<gf::Vector2u> getDestinations(gf::Vector2u coords);
 

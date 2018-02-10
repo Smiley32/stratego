@@ -5,12 +5,8 @@
 #include <gf/Easings.h>
 
 Grid::Grid(gf::ResourceManager& resources)
-: m_layer({GridSize, GridSize})
-, anim({0, 0}, {0, 0}, spritePos, gf::seconds(0.5), gf::Ease::elasticInOut)
+: anim({0, 0}, {0, 0}, spritePos, gf::seconds(0.5), gf::Ease::elasticInOut)
 {
-  m_layer.setTileSize({TileSize, TileSize});
-  m_layer.setTexture(resources.getTexture("pieces.png"));
-
   updateFirstPiece.side = Side::Other;
   updateFirstPiece.rank = Rank::Unknown;
 
@@ -46,25 +42,12 @@ Grid::Grid(gf::ResourceManager& resources)
   scale = 1;
 }
 
-void Grid::createGrid() {
-  m_layer.clear();
-
-  for(unsigned x = 0; x < GridSize; x++) {
-    for(unsigned y = 0; y < GridSize; y++) {
-      gf::Vector2u coords(x, y);
-      m_layer.setTile(coords, static_cast<int>(grid[x][y].rank));
-    }
-  }
-}
-
 void Grid::setPosition(gf::Vector2f origin) {
-  // m_layer.setPosition(origin);
   position = origin;
 }
 
 gf::Vector2f Grid::getPosition() {
-  // return m_layer.getPosition();
-  return get_current_position(position, scale);
+  return position;
 }
 
 gf::Vector2i Grid::getPieceCoordsFromMouse(gf::Vector2f coords) {
@@ -109,7 +92,6 @@ void Grid::setPieceRandom(Piece p) {
 
 void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   // std::cout << "Dessin..." << std::endl;
-  // target.draw(m_layer, states);
 
   // Affichage du fond
   gf::Texture background_texture;
@@ -205,20 +187,6 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 }
 
 void Grid::update(gf::Time time) {
-  if(modif) {
-    // std::cout << "update" << std::endl;
-    modif = false;
-
-    m_layer.clear();
-    for(unsigned x = 0; x < GridSize; x++) {
-      for(unsigned y = 0; y < GridSize; y++) {
-        gf::Vector2u coords(x, y);
-        m_layer.setTile(coords, static_cast<int>(grid[x][y].rank));
-        // std::cout << "[" << coords.x << ", " << coords.y << "] - " << m_layer.getTile(coords) << std::endl;
-      }
-    }
-  }
-
   if(animEnabled) {
     if(anim.run(time) == gf::ActivityStatus::Finished) {
       animEnabled = false;
