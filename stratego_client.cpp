@@ -95,13 +95,17 @@ void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<Messa
  * 
  * @return bool true si l'utilisateur a demandé à quitter
  */
-bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui) {
+bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui, bool &aide) {
   bool ret = false;
 
   // Afficher la fenêtre d'UI
   if(ui.begin("Menu", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
 
     ui.layoutRowDynamic(25, 1);
+
+    if(ui.buttonLabel("Aide")) {
+      aide = true;
+    }
 
     if(ui.buttonLabel("Quitter")) {
       // Envoi d'un message de déconnexion au serveur
@@ -203,7 +207,7 @@ int main(int argc, char *argv[]) {
 
   // Initialisation
   static constexpr gf::Vector2u ScreenSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-  gf::Window window("Petit jeu en réseau (client)", ScreenSize);
+  gf::Window window("Client Stratego", ScreenSize);
   window.setFramerateLimit(60);
   gf::RenderWindow renderer(window);
 
@@ -254,8 +258,8 @@ int main(int argc, char *argv[]) {
   gf::RectF world(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
   gf::ViewContainer views;
   gf::ScreenView screenView;
-  gf::ExtendView extendView(world);
   views.addView(screenView);
+  gf::ExtendView extendView(world);
   views.addView(extendView);
   views.setInitialScreenSize({DEFAULT_WIDTH, DEFAULT_HEIGHT});
 
@@ -407,6 +411,7 @@ int main(int argc, char *argv[]) {
   CustomError customError = CustomError::None;
 
   bool uiOpen = false; // Pour que si une fenêtre est ouverte, on ne puisse pas cliquer autre part
+  bool aide = false;
 
   while(window.isOpen() && state != State::PlacingOver) {
       gf::Event event;
@@ -419,7 +424,7 @@ int main(int argc, char *argv[]) {
           s.updateMouseCoords(renderer.mapPixelToCoords(event.mouseCursor.coords));
         }
 
-        if(event.type == gf::EventType::MouseButtonPressed && state == State::Placing && !displayEscUi) {
+        if(event.type == gf::EventType::MouseButtonPressed && state == State::Placing && !displayEscUi && !aide) {
 
           // Clic gauche : choisir une pièce
           if(event.mouseButton.button == gf::MouseButton::Left) {
@@ -502,10 +507,14 @@ int main(int argc, char *argv[]) {
       }
 
       if(escAction.isActive()) {
-        if(!escPressed) {
-          displayEscUi = !displayEscUi;
+        if(aide) {
+          aide = false;
+        } else {
+          if(!escPressed) {
+            displayEscUi = !displayEscUi;
+          }
+          escPressed = true;
         }
-        escPressed = true;
       } else {
         escPressed = false;
       }
@@ -557,6 +566,13 @@ int main(int argc, char *argv[]) {
       renderer.setView(extendView);
       renderer.draw(background);
       entities.render(renderer);
+      
+      if(aide) {
+        gf::Sprite help_sprite;
+        help_sprite.setTexture(resources.getTexture("help.png"));
+        help_sprite.setPosition({DEFAULT_GRID_X, DEFAULT_GRID_Y});
+        renderer.draw(help_sprite);
+      }
 
       // Réception des messages
       Message msg;
@@ -607,8 +623,8 @@ int main(int argc, char *argv[]) {
       }
 
       // UI
-      if(displayEscUi) {
-        if(escFct(socket, renderer, ui)) {
+      if(displayEscUi && !aide) {
+        if(escFct(socket, renderer, ui, aide)) {
           // Il va falloir quitter
           state = State::Exit;
         }
@@ -750,6 +766,13 @@ int main(int argc, char *argv[]) {
     renderer.draw(background);
     entities.render(renderer);
 
+    if(aide) {
+      gf::Sprite help_sprite;
+      help_sprite.setTexture(resources.getTexture("help.png"));
+      help_sprite.setPosition({DEFAULT_GRID_X, DEFAULT_GRID_Y});
+      renderer.draw(help_sprite);
+    }
+
     // Réception des messages
     Message msg;
     bool msgLu = messages.poll(msg);
@@ -826,7 +849,7 @@ int main(int argc, char *argv[]) {
     // UI
     renderer.setView(screenView);
     if(displayEscUi) {
-      if(escFct(socket, renderer, ui)) {
+      if(escFct(socket, renderer, ui, aide)) {
         state = State::Exit;
       }
     }

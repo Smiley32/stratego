@@ -117,8 +117,6 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   gf::Sprite background;
   background.setTexture(m_background_texture);
   background.setPosition({getPosition().x - 30, getPosition().y - 30});
-
-  background.setScale(scale);
   target.draw(background);
 
   // Tracé de la grille
