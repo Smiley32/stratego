@@ -118,6 +118,10 @@ public:
   void makeBlueSide();
 
 private:
+  gf::Texture& m_background_texture;
+  gf::Texture& m_red_texture;
+  gf::Texture& m_blue_texture;
+
   /// Nombre aléatoire entre min et max
   int aleat(int min, int max);
 

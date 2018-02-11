@@ -4,9 +4,12 @@
 
 Selection::Selection(gf::ResourceManager& resources)
 : m_layer({NbPieces, 1})
+, m_red_texture(resources.getTexture("pieces.png"))
+, m_blue_texture(resources.getTexture("pieces_blue.png"))
+, m_background_texture(resources.getTexture("select.png"))
 {
   m_layer.setTileSize({TileSize, TileSize});
-  m_layer.setTexture(resources.getTexture("pieces.png"));
+  m_layer.setTexture(m_red_texture);
 
   for(unsigned x = 0; x < NbPieces; x++) {
     grid[x].side = Side::Red;
@@ -59,7 +62,6 @@ Piece Selection::getRandomPiece() {
     int x;
     do {
       x = aleat(0, NbPieces - 1);
-      // std::cout << "nb aleat : " << x << std::endl;
     } while(nbPieces[x] == 0);
     
     p.side = Side::Red;
@@ -121,11 +123,8 @@ int Selection::aleat(int min, int max) {
 void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
   // Affichage du fond
-  gf::Texture background_texture;
-  background_texture.loadFromFile("select.png");
-
   gf::Sprite background;
-  background.setTexture(background_texture);
+  background.setTexture(m_background_texture);
 
   if(vertical) {
     background.setRotation(3.14159265358979323846 / 2);
@@ -134,15 +133,9 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
     background.setPosition({getPosition().x, getPosition().y});
   }
 
-  // background.setScale(scale);
   target.draw(background);
 
-  gf::Texture texture;
-  if(blueSide) {
-    texture.loadFromFile("pieces_blue.png");
-  } else {
-    texture.loadFromFile("pieces.png");
-  }
+  gf::Texture *texture = blueSide ? &m_blue_texture : &m_red_texture;
   
   gf::Font font;
   font.loadFromFile("16_DejaVuSans.ttf");
@@ -156,14 +149,13 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
       r = (int)Rank::Empty;
     }
 
-    gf::Sprite sprite(texture, gf::RectF( ((r * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((r * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
+    gf::Sprite sprite(*texture, gf::RectF( ((r * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((r * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
     if(vertical) {
       sprite.setPosition({getPosition().x, getPosition().y + (x * TileSize)});
     } else {
       sprite.setPosition({getPosition().x + (x * TileSize), getPosition().y});
     }
     
-    // sprite.setScale(scale);
     target.draw(sprite, states);
 
     // Affichage du nombre de pièces restantes
@@ -175,19 +167,13 @@ void Selection::render(gf::RenderTarget& target, const gf::RenderStates& states)
       txt.setPosition({getPosition().x + (x * TileSize) + 20, getPosition().y + TileSize + 20});
     }
     target.draw(txt, states);
-
-    // m_layer.setTile(coords, static_cast<int>(grid[x].rank));
   }
 
   // Affichage de la pièce selectionnée
   if(selected != -1) {
-    // std::cout << "(x,y): (" << mouseCoords.x << "," << mouseCoords.y << ")" << std::endl;
-    gf::Sprite sprite(texture, gf::RectF( ((selected * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((selected * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
+    gf::Sprite sprite(*texture, gf::RectF( ((selected * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((selected * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
     sprite.setPosition({(float)(mouseCoords.x - TileSize / 2), (float)(mouseCoords.y - TileSize / 2)});
-    // sprite.setScale(scale);
 
     target.draw(sprite, states);
   }
-
-  // target.draw(m_layer);
 }

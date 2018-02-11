@@ -84,6 +84,10 @@ public:
   void update_scale(double scale);
 
 private:
+  gf::Texture& m_background_texture;
+  gf::Texture& m_red_texture;
+  gf::Texture& m_blue_texture;
+
   gf::Vector2f position;
   double scale;
 

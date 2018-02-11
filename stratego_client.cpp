@@ -254,14 +254,16 @@ int main(int argc, char *argv[]) {
   gf::RectF world(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
   gf::ViewContainer views;
   gf::ScreenView screenView;
-  gf::FitView fitView(world);
+  gf::ExtendView extendView(world);
   views.addView(screenView);
-  views.addView(fitView);
+  views.addView(extendView);
   views.setInitialScreenSize({DEFAULT_WIDTH, DEFAULT_HEIGHT});
 
-  
-  gf::RectangleShape background(world);
-  background.setColor(gf::Color::Red);
+  gf::RectF extendedWorld = world.extend(1000);
+  gf::RectangleShape background(extendedWorld);
+  gf::Texture background_texture;
+  background_texture.loadFromFile("fond.jpg");
+  background.setTexture(background_texture);
 
   /******************************************************************/
   /***
@@ -310,6 +312,8 @@ int main(int argc, char *argv[]) {
     renderer.clear();
 
     renderer.setView(screenView);
+
+    renderer.draw(background);
 
     // UI
     if(displayEscUi) {
@@ -523,9 +527,8 @@ int main(int argc, char *argv[]) {
         if(!s.isEmpty()) {
           // Il reste des pièces à placer
           customError = CustomError::NotFinished;
-        } else {
+        } else if(state != State::WaitAnswer) {
           // Envoi des pièces au serveur
-
           Initialize init;
 
           int nb = PLAYER_MAX_PIECES - 1;
@@ -551,7 +554,8 @@ int main(int argc, char *argv[]) {
 
       // Draw
       renderer.clear();
-      renderer.setView(fitView);
+      renderer.setView(extendView);
+      renderer.draw(background);
       entities.render(renderer);
 
       // Réception des messages
@@ -640,7 +644,7 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      renderer.setView(fitView);
+      renderer.setView(extendView);
 
       if(displayStateUi(window, renderer, ui, state)) {
         state = State::Exit;
@@ -742,7 +746,8 @@ int main(int argc, char *argv[]) {
 
     // Draw
     renderer.clear();
-    renderer.setView(fitView);
+    renderer.setView(extendView);
+    renderer.draw(background);
     entities.render(renderer);
 
     // Réception des messages
@@ -826,7 +831,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    renderer.setView(fitView);
+    renderer.setView(extendView);
     if(displayStateUi(window, renderer, ui, state)) {
       state = State::Exit;
     }

@@ -6,6 +6,9 @@
 
 Grid::Grid(gf::ResourceManager& resources)
 : anim({0, 0}, {0, 0}, spritePos, gf::seconds(0.5), gf::Ease::elasticInOut)
+, m_red_texture(resources.getTexture("pieces.png"))
+, m_blue_texture(resources.getTexture("pieces_blue.png"))
+, m_background_texture(resources.getTexture("board.png"))
 {
   updateFirstPiece.side = Side::Other;
   updateFirstPiece.rank = Rank::Unknown;
@@ -111,11 +114,8 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
   // std::cout << "Dessin..." << std::endl;
 
   // Affichage du fond
-  gf::Texture background_texture;
-  background_texture.loadFromFile("board.png");
-
   gf::Sprite background;
-  background.setTexture(background_texture);
+  background.setTexture(m_background_texture);
   background.setPosition({getPosition().x - 30, getPosition().y - 30});
 
   background.setScale(scale);
@@ -148,12 +148,6 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
     }
   }
 
-  gf::Texture texture;
-  texture.loadFromFile("pieces.png");
-
-  gf::Texture blueTexture;
-  blueTexture.loadFromFile("pieces_blue.png");
-
   for(unsigned x = 0; x < GridSize; x++) {
     for(unsigned y = 0; y < GridSize; y++) {
       // On n'affiche pas la pièce sélectionnée si on a commencé son animation
@@ -168,9 +162,9 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
 
       gf::Texture *t;
       if(grid[x][y].side == Side::Blue) {
-        t = &blueTexture;
+        t = &m_blue_texture;
       } else {
-        t = &texture;
+        t = &m_red_texture;
       }
 
       gf::Sprite sprite(*t, gf::RectF( ((r * DEFAULT_PIECE_WIDTH) % 256) / 256.0, (((r * DEFAULT_PIECE_WIDTH) / 256) * DEFAULT_PIECE_WIDTH) / 256.0, DEFAULT_PIECE_WIDTH / 256.0, DEFAULT_PIECE_WIDTH / 256.0));
@@ -187,9 +181,9 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
     if(updateFirstCoords.x != -1) {
       r = (int)grid[updateFirstCoords.x][updateFirstCoords.y].rank;
       if(grid[updateFirstCoords.x][updateFirstCoords.y].side == Side::Blue) {
-        t = &blueTexture;
+        t = &m_blue_texture;
       } else {
-        t = &texture;
+        t = &m_red_texture;
       }
     } else {
       r = (int)grid[selected.x][selected.y].rank;
@@ -199,7 +193,6 @@ void Grid::render(gf::RenderTarget& target, const gf::RenderStates& states) {
     sprite.setPosition(spritePos);
     sprite.setScale(scale);
     target.draw(sprite, states);
-    // std::cout << "<" << r << "> affichage..." << spritePos.x << " ; " << spritePos.y << std::endl;
   }
 }
 
