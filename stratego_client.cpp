@@ -95,7 +95,7 @@ void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<Messa
  * 
  * @return bool true si l'utilisateur a demandé à quitter
  */
-bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui, bool &aide) {
+bool escFct(gf::RenderWindow &renderer, gf::UI &ui, bool &aide) {
   bool ret = false;
 
   // Afficher la fenêtre d'UI
@@ -108,8 +108,6 @@ bool escFct(tcp::socket* socket, gf::RenderWindow &renderer, gf::UI &ui, bool &a
     }
 
     if(ui.buttonLabel("Quitter")) {
-      // Envoi d'un message de déconnexion au serveur
-      send_message(*socket, create_quit_message());
       ret = true;
     }
   }
@@ -624,8 +622,9 @@ int main(int argc, char *argv[]) {
 
       // UI
       if(displayEscUi && !aide) {
-        if(escFct(socket, renderer, ui, aide)) {
+        if(escFct(renderer, ui, aide)) {
           // Il va falloir quitter
+          send_message(*socket, create_quit_message());
           state = State::Exit;
         }
       }
@@ -718,24 +717,20 @@ int main(int argc, char *argv[]) {
 
       if(event.type == gf::EventType::MouseButtonPressed) {
 
-        if(event.mouseButton.button == gf::MouseButton::Left) {
-            if(state != State::Play) {
-              continue;
+        if(event.mouseButton.button == gf::MouseButton::Left && state == State::Play) {
+          gf::Vector2i coords = g.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
+          if(coords.x != -1 && coords.y != -1) {
+            if(g.isValidMove(coords)) {
+              // Envoi au serveur du mouvement
+              gf::Vector2u source = g.selected;
+              gf::Vector2u target = coords;
+              send_message(*socket, create_move_message(create_movement(&source, &target, false)));
+              
+              state = State::WaitUpdateAnswer;
+            } else {
+              g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
             }
-
-            gf::Vector2i coords = g.getPieceCoordsFromMouse(renderer.mapPixelToCoords(event.mouseButton.coords));
-            if(coords.x != -1 && coords.y != -1) {
-              if(g.isValidMove(coords)) {
-                // Envoi au serveur du mouvement
-                gf::Vector2u source = g.selected;
-                gf::Vector2u target = coords;
-                send_message(*socket, create_move_message(create_movement(&source, &target, false)));
-                
-                state = State::WaitUpdateAnswer;
-              } else {
-                g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
-              }
-            }
+          }
         }
       }
     }
@@ -743,14 +738,18 @@ int main(int argc, char *argv[]) {
     if(closeWindowAction.isActive() && state != State::FatalError) {
       // Envoi d'un message de déconnexion au serveur
       send_message(*socket, create_quit_message());
-      window.close();
+      state = State::Exit;
     }
 
     if(escAction.isActive()) {
-      if(!escPressed) {
-        displayEscUi = !displayEscUi;
+      if(aide) {
+        aide = false;
+      } else {
+        if(!escPressed) {
+          displayEscUi = !displayEscUi;
+        }
+        escPressed = true;
       }
-      escPressed = true;
     } else {
       escPressed = false;
     }
@@ -848,8 +847,9 @@ int main(int argc, char *argv[]) {
 
     // UI
     renderer.setView(screenView);
-    if(displayEscUi) {
-      if(escFct(socket, renderer, ui, aide)) {
+    if(displayEscUi && !aide) {
+      if(escFct(renderer, ui, aide)) {
+        send_message(*socket, create_quit_message());
         state = State::Exit;
       }
     }
