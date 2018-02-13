@@ -5,38 +5,20 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
+#include <thread>
+#include <gf/Queue.h>
+
 #include "packet.h"
 #include "message.h"
 
 using boost::asio::ip::tcp;
 
-boost::array<char, 128> get_message_serv(tcp::socket *socket)
-{
-  boost::array<char, 128> buf;
-  boost::system::error_code error;
-  bool is_ok = false;
-  size_t len;
-
-
-    len = socket->read_some(boost::asio::buffer(buf), error);
-
-    if (error)
-    {
-      throw boost::system::system_error(error);
-    }
-
-
-
-    gf::Log::info("\nMessage reçu:\n");
-    for (size_t i = 0; i < len; i++)
-    {
-      std::cout << (int) buf[i] << ' ';
-    }
-
-    std::cout << std::endl;
-
-  // std::string data(buf.begin(), buf.begin() + len);
-  return buf;
+void player_thread(tcp::socket *socket, gf::Queue<Message> *messages) {
+  bool error = false;
+  while(!error) {
+    error = !get_message(*socket, *messages);
+    printf("reception...\n");
+  }
 }
 
 int main(int argc, char *argv[])
@@ -47,6 +29,10 @@ int main(int argc, char *argv[])
   boost::system::error_code error;
   tcp::socket first_client(io_service);
   tcp::socket second_client(io_service);
+
+  tcp::socket *first_client_pointer = &first_client;
+  tcp::socket *second_client_pointer = &second_client;
+
   Message new_message;
   Movement new_movement;
   Result new_result;
@@ -68,6 +54,9 @@ int main(int argc, char *argv[])
   size_t len;
   srand(time(NULL));
 
+  // Files de messages
+  gf::Queue<Message> *first_messages = new gf::Queue<Message>();
+  gf::Queue<Message> *second_messages = new gf::Queue<Message>();
 
   try
   {
@@ -87,8 +76,7 @@ int main(int argc, char *argv[])
     // Ecoute des connections
     tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), port));
 
-    if ((rand()%2) == 1)
-    {
+    if((rand()%2) == 1) {
       // Attente du premier client
       gf::Log::info("\nWaiting for the first client\n");
 
@@ -130,108 +118,82 @@ int main(int argc, char *argv[])
 
     // Commemencement boucle de lecture des pièces
 
+    // Création des processus de réception
+    try {
+      std::thread first_thread(player_thread, &first_client, first_messages);
+      first_thread.detach();
+      std::thread second_thread(player_thread, &second_client, second_messages);
+      second_thread.detach();
+    } catch(std::exception &e) {
+      exit(-1);
+    }
+    
     our_grid.create_empty_grid();
 
-    // BOUCLE ACCEPTATION DES PIECES
-    while (!our_grid.start_game())
-    {
-      // SI TEAM ROUGE PAS ENCORE PRETE (premier client)
-      if (!red_team_rdy)
-      {
-        new_message = get_message(first_client);
-
-        if (new_message.id != ID_message::Initiate)
-        {
-          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
-          {
-            gf::Log::error("\nThe client has quited or crashed\n");
-            new_message = create_end_message(true);
-            send_message(second_client, new_message);
-            new_message = create_end_message(false);
-            send_message(first_client, new_message);
-
-            exit(-1);
-          }
-          new_message = create_accept_message(false);
-          send_message(first_client, new_message);
-
-          gf::Log::error("\nSignal Error: Expected 1 but get %d\n", (int) new_message.id);
-          continue;
-        }
-
-        for (size_t i = 0; i < PLAYER_MAX_PIECES; i++)
-        {
-          first_p_pos = new_message.data.initiate.pieces[i].pos;
-          first_p_value = new_message.data.initiate.pieces[i].value;
-
-          get_vector_coord(&first_coo2D, first_p_pos, true);
-          current_piece.rank = (Rank) first_p_value;
-          current_piece.side = Side::Red;
-
-          if (!our_grid.create_piece(first_coo2D, current_piece))
-          {
-            new_message = create_accept_message(false);
-            send_message(first_client, new_message);
-            break;
-          }
-        }
-        red_team_rdy = our_grid.red_t_ok();
-
-        if (red_team_rdy)
-        {
-          new_message = create_accept_message(true);
-          send_message(first_client, new_message);
+    // Boucle d'acceptation des pièces
+    bool inversed = true;
+    while(!our_grid.start_game()) {
+      bool msg_lu = false;
+      while(!msg_lu) {
+        msg_lu = first_messages->poll(new_message);
+        if(!msg_lu) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
       }
 
-      // SI TEAM BLEUE PAS ENCORE PRETE
-      if (!blue_team_rdy)
-      {
-        new_message = get_message(second_client);
+      if(new_message.id != ID_message::Initiate) {
+        if(new_message.id == ID_message::Quit || new_message.id == ID_message::Error) {
+          gf::Log::error("\nThe client has quited or crashed\n");
+          new_message = create_end_message(true);
+          send_message(*second_client_pointer, new_message);
+          new_message = create_end_message(false);
+          send_message(*first_client_pointer, new_message);
 
-        if (new_message.id != ID_message::Initiate)
-        {
-          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
-          {
-            gf::Log::error("\nThe client has quited or crashed\n");
-            new_message = create_end_message(true);
-            send_message(second_client, new_message);
-            new_message = create_end_message(false);
-            send_message(first_client, new_message);
+          exit(-1);
+        }
 
-            exit(-1);
-          }
+        new_message = create_accept_message(false);
+        send_message(*first_client_pointer, new_message);
+
+        gf::Log::error("\nSignal Error: Expected 1 but get %d\n", (int) new_message.id);
+        continue;
+      }
+
+      // Verif du message
+      for(size_t i = 0; i < PLAYER_MAX_PIECES; i++) {
+        first_p_pos = new_message.data.initiate.pieces[i].pos;
+        first_p_value = new_message.data.initiate.pieces[i].value;
+
+        get_vector_coord(&first_coo2D, first_p_pos, inversed);
+        current_piece.rank = (Rank) first_p_value;
+        current_piece.side = inversed ? Side::Red : Side::Blue;
+
+        if(!our_grid.create_piece(first_coo2D, current_piece)) {
           new_message = create_accept_message(false);
-          send_message(second_client, new_message);
-
-          gf::Log::error("\nSignal Error: Expected 1 but get %d\n", (int) new_message.id);
-          continue;
+          send_message(*first_client_pointer, new_message);
+          break;
         }
+      }
 
-        for (size_t i = 0; i < PLAYER_MAX_PIECES; i++)
-        {
-          second_p_pos = new_message.data.initiate.pieces[i].pos;
-          second_p_value = new_message.data.initiate.pieces[i].value;
+      if(inversed && our_grid.red_t_ok()) {
+        new_message = create_accept_message(true);
+        send_message(*first_client_pointer, new_message);
 
-          get_vector_coord(&second_coo2D, second_p_pos, false);
-          current_piece.rank = (Rank) second_p_value;
-          current_piece.side = Side::Blue;
+        // inversion des deux clients (les pointeurs seulement pour ne pas gener les threads de reception)
+        std::swap(first_client_pointer, second_client_pointer);
+        gf::Log::info("swap\n");
+        std::swap(first_messages, second_messages);
+        inversed = !inversed;
+      } else if(!inversed && our_grid.blue_t_ok()) {
+        new_message = create_accept_message(true);
+        send_message(*first_client_pointer, new_message);
 
-
-          if (!our_grid.create_piece(second_coo2D, current_piece))
-          {
-            std::cout << "bleee" << std::endl;
-            new_message = create_accept_message(false);
-            send_message(second_client, new_message);
-            break;
-          }
-        }
-        blue_team_rdy = our_grid.blue_t_ok();
-
-        if(blue_team_rdy) {
-          new_message = create_accept_message(true);
-          send_message(second_client, new_message);
-        }
+        // devrait être fini
+        // --> On réinverse pour la suite
+        std::swap(first_client_pointer, second_client_pointer);
+        gf::Log::info("swap\n");
+        std::swap(first_messages, second_messages);
+        inversed = !inversed;
       }
     }
 
@@ -239,30 +201,33 @@ int main(int argc, char *argv[])
     gf::Log::info("\nSignal 2 for start sent to both client\n");
 
     new_message = create_play_message();
-    send_message(first_client, new_message);
-    send_message(second_client, new_message);
+    send_message(*first_client_pointer, new_message);
+    send_message(*second_client_pointer, new_message);
 
-    while (!our_grid.game_is_end())
-    {
+    while (!our_grid.game_is_end()) {
       // ACTION PREMIER JOUEUR
       gf::Log::info("\nSignal 2 for play sent to first client\n");
       new_message = create_play_message();
-      send_message(first_client, new_message);
+      send_message(*first_client_pointer, new_message);
 
       accepted = false;
-      while (!accepted)
-      {
-        new_message = get_message(first_client);
+      while(!accepted) {
+        bool msg_lu = false;
+        while(!msg_lu) {
+          msg_lu = first_messages->poll(new_message);
+          if(!msg_lu) {
+            printf("rien...");
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+          }
+        }
 
-        if (new_message.id != ID_message::Move)
-        {
-          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
-          {
+        if(new_message.id != ID_message::Move) {
+          if(new_message.id == ID_message::Quit || new_message.id == ID_message::Error) {
             gf::Log::error("\nThe client has quited or crashed\n");
             new_message = create_end_message(true);
-            send_message(second_client, new_message);
+            send_message(*second_client_pointer, new_message);
             new_message = create_end_message(false);
-            send_message(first_client, new_message);
+            send_message(*first_client_pointer, new_message);
 
             exit(-1);
           }
@@ -273,255 +238,91 @@ int main(int argc, char *argv[])
         first_p_pos = new_message.data.move.source;
         second_p_pos = new_message.data.move.target;
 
-        get_vector_coord(&first_coo2D, first_p_pos, true);
-        get_vector_coord(&second_coo2D, second_p_pos, true);
+        get_vector_coord(&first_coo2D, first_p_pos, inversed);
+        get_vector_coord(&second_coo2D, second_p_pos, inversed);
         first_p_value = our_grid.get_value(first_coo2D);
         second_p_value = our_grid.get_value(second_coo2D);
 
         gf::Log::info("\nAsk for a moove from %d %d (team 1) to %d %d, piece have value %d, target is %d\n", first_coo2D.x, first_coo2D.y, second_coo2D.x, second_coo2D.y, first_p_value, second_p_value);
 
-        if (our_grid.get_side(first_coo2D) == Side::Red)
-        {
-          std::cout << "Red" << std::endl;
+        if((inversed && our_grid.get_side(first_coo2D) == Side::Red) || (!inversed && our_grid.get_side(first_coo2D) == Side::Blue)) {
+          std::cout << (inversed ? "Red" : "Blue") << std::endl;
           accepted = our_grid.move_piece(first_coo2D, second_coo2D);
-        }
-        else
-        {
-          if (our_grid.get_side(first_coo2D) == Side::Blue)
-          {
+        } else {
+          /*if(our_grid.get_side(first_coo2D) == Side::Blue) {
             std::cout << "Blue" << std::endl;
           }
           else
           {
             std::cout << "Other" << std::endl;
-          }
+          }*/
           gf::Log::info("\nYou can't moove a piece from the enemy team\n");
         }
 
-        if (accepted)
-        {
-          new_message = create_accept_message(true);
-          send_message(first_client, new_message);
-        }
-        else
-        {
-          new_message = create_accept_message(false);
-          send_message(first_client, new_message);
-        }
+        new_message = create_accept_message(accepted);
+        send_message(*first_client_pointer, new_message);
       }
 
       // Envoie update premier client
       gf::Log::info("\nSignal 4 for update sent to first client\n");
-      new_movement = create_movement(&first_coo2D, &second_coo2D, false);
+      new_movement = create_movement(&first_coo2D, &second_coo2D, !inversed);
 
-      if (our_grid.had_collision())
-      {
-        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
-        {
+      if(our_grid.had_collision()) {
+        if((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D)) {
           new_result = Result::Draw;
-        }
-        else
-        {
-          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
-          {
+        } else {
+          if(second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty) {
             new_result = Result::Lose;
-          }
-          else
-          {
+          } else {
             new_result = Result::Win;
           }
         }
 
         new_message = create_update_message(new_movement, second_p_value, new_result);
-      }
-      else
-      {
+      } else {
         new_message = create_update_message(new_movement);
       }
 
-      send_message(first_client, new_message);
+      send_message(*first_client_pointer, new_message);
 
       // Envoi update deuxième client
       gf::Log::info("\nSignal 4 for update sent to second client\n");
-      new_movement = create_movement(&first_coo2D, &second_coo2D, true);
-      if (our_grid.had_collision())
-      {
-        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
-        {
+      new_movement = create_movement(&first_coo2D, &second_coo2D, inversed);
+      if(our_grid.had_collision()) {
+        if((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D)) {
           new_result = Result::Draw;
-        }
-        else
-        {
-          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
-          {
+        } else {
+          if(second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty) {
             new_result = Result::Win;
-          }
-          else
-          {
+          } else {
             new_result = Result::Lose;
           }
         }
 
         new_message = create_update_message(new_movement, first_p_value, new_result);
-      }
-      else
-      {
+      } else {
         new_message = create_update_message(new_movement);
       }
 
-      send_message(second_client, new_message);
+      send_message(*second_client_pointer, new_message);
 
-      if (our_grid.game_is_end())
-      {
+      if(our_grid.game_is_end()) {
         gf::Log::info("\nThe first client won !\n");
         new_message = create_end_message(true);
 
-        send_message(first_client, new_message);
+        send_message(*first_client_pointer, new_message);
 
         gf::Log::info("\nThe second client lost !\n");
         new_message = create_end_message(false);
 
-        send_message(second_client, new_message);
+        send_message(*second_client_pointer, new_message);
       }
 
-      // ACTION DEUXIEME JOUEUR
-      gf::Log::info("\nSignal 2 for play sent to second client\n");
-      new_message = create_play_message();
-      send_message(second_client, new_message);
-
-      accepted = false;
-      while (!accepted)
-      {
-        new_message = get_message(second_client);
-
-        if (new_message.id != ID_message::Move)
-        {
-          if (new_message.id == ID_message::Quit || new_message.id == ID_message::Error)
-          {
-            gf::Log::error("\nThe client has quited or crashed\n");
-            new_message = create_end_message(true);
-            send_message(second_client, new_message);
-            new_message = create_end_message(false);
-            send_message(first_client, new_message);
-
-            exit(-1);
-          }
-          gf::Log::error("\nSignal Error: Expected signal Move (3) but get %c\n", buf[0]);
-          continue;
-        }
-
-        first_p_pos = new_message.data.move.source;
-        second_p_pos = new_message.data.move.target;
-
-        get_vector_coord(&first_coo2D, first_p_pos, false);
-        get_vector_coord(&second_coo2D, second_p_pos, false);
-        first_p_value = our_grid.get_value(first_coo2D);
-        second_p_value = our_grid.get_value(second_coo2D);
-        gf::Log::info("\nAsk for a moove from %d %d (team 2) to %d %d (team 1), piece have value %d, target is %d\n", first_coo2D.x, first_coo2D.y, second_coo2D.x, second_coo2D.y, first_p_value, second_p_value);
-
-        if (our_grid.get_side(first_coo2D) == Side::Blue)
-        {
-          std::cout << "Blue" << std::endl;
-          accepted = our_grid.move_piece(first_coo2D, second_coo2D);
-        }
-        else
-        {
-          if (our_grid.get_side(first_coo2D) == Side::Red)
-          {
-            std::cout << "Red" << std::endl;
-          }
-          else
-          {
-            std::cout << "Other" << std::endl;
-          }
-        }
-
-        if (accepted)
-        {
-          new_message = create_accept_message(true);
-          send_message(second_client, new_message);
-        }
-        else
-        {
-          new_message = create_accept_message(false);
-          send_message(second_client, new_message);
-        }
-      }
-
-      // Envoie update premier client
-      gf::Log::info("\nSignal 4 for update sent to first client\n");
-
-      new_movement = create_movement(&first_coo2D, &second_coo2D, false);
-
-      if (our_grid.had_collision())
-      {
-        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
-        {
-          new_result = Result::Draw;
-        }
-        else
-        {
-          if (first_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
-          {
-            new_result = Result::Lose;
-          }
-          else
-          {
-            new_result = Result::Win;
-          }
-        }
-
-        new_message = create_update_message(new_movement, first_p_value, new_result);
-      }
-      else
-      {
-        new_message = create_update_message(new_movement);
-      }
-
-      send_message(first_client, new_message);
-
-
-      // Envoi update deuxième client
-      gf::Log::info("\nSignal 4 for update sent to second client\n");
-
-      new_movement = create_movement(&first_coo2D, &second_coo2D, true);
-
-      if (our_grid.had_collision())
-      {
-        if ((int) Rank::Empty == our_grid.get_value(first_coo2D) && (int) Rank::Empty == our_grid.get_value(second_coo2D))
-        {
-          new_result = Result::Draw;
-        }
-        else
-        {
-          if (second_p_value == our_grid.get_value(second_coo2D) && our_grid.get_value(first_coo2D) == (int) Rank::Empty)
-          {
-            new_result = Result::Lose;
-          }
-          else
-          {
-            new_result = Result::Win;
-          }
-        }
-
-        new_message = create_update_message(new_movement, second_p_value, new_result);
-      }
-      else
-      {
-        new_message = create_update_message(new_movement);
-      }
-
-      send_message(second_client, new_message);
-
-      if (our_grid.game_is_end())
-      {
-        gf::Log::info("\nThe second client won !\n");
-        new_message = create_end_message(true);
-        send_message(second_client, new_message);
-        gf::Log::info("\nThe first client loose !\n");
-        new_message = create_end_message(false);
-        send_message(first_client, new_message);
-      }
+      // Inversion des clients
+      inversed = !inversed;
+      std::swap(first_client_pointer, second_client_pointer);
+      gf::Log::info("swap\n");
+      std::swap(first_messages, second_messages);
     }
   }
   catch(std::exception &e)

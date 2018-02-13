@@ -83,11 +83,11 @@ enum class CustomError {
 };
 
 // Thread qui va communiquer avec le serveur
-void reception_thread(char *ip, char *port, tcp::socket* socket, gf::Queue<Message>* messages) {
-    bool fatalError = false;
-    while( !fatalError ) {
-      fatalError = !get_message(*socket, *messages);
-    }
+void reception_thread(tcp::socket* socket, gf::Queue<Message>* messages) {
+  bool fatalError = false;
+  while( !fatalError ) {
+    fatalError = !get_message(*socket, *messages);
+  }
 }
 
 /**
@@ -351,7 +351,7 @@ int main(int argc, char *argv[]) {
           connection(&socket, servIp, servPort);
 
           // Création du thread qui va se connecter au serveur
-          std::thread rt(reception_thread, servIp, servPort, socket, &messages);
+          std::thread rt(reception_thread, socket, &messages);
 
           rt.detach();
 
