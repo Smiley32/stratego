@@ -132,18 +132,20 @@ bool get_message(tcp::socket &socket, gf::Queue<Message> &file) {
   bool error = false;
   do {
     switch(msg[0]) {
-      case -1:
+      case (int)ID_message::Error:
         error = true;
         break;
-      case 0:
-      case 5:
+      case (int)ID_message::Accept:
+      case (int)ID_message::End:
         length = 2;
         break;
-      case 1:
-      case 3:
+      case (int)ID_message::Initiate:
+        length = 81;
+        break;
+      case (int)ID_message::Move:
         length = 3;
         break;
-      case 4:
+      case (int)ID_message::Update:
         if(msg[1]) {
           length = 6;
         } else {
