@@ -13,11 +13,22 @@
 
 using boost::asio::ip::tcp;
 
-void player_thread(tcp::socket *socket, gf::Queue<Message> *messages) {
+void player_thread(tcp::socket *socket, tcp::socket *other, gf::Queue<Message> *messages) {
+  gf::Queue<Message> tmp;
+
   bool error = false;
-  while(!error) {
-    error = !get_message(*socket, *messages);
-    printf("reception...\n");
+  while( !error ) {
+    error = !get_message(*socket, tmp);
+
+    Message msg;
+    while(tmp.poll(msg)) {
+      printf("polled...\n");
+      if(msg.id != ID_message::Text) {
+        messages->push(msg);
+      } else {
+        send_message(*other, msg);
+      }
+    }
   }
 }
 
@@ -120,9 +131,9 @@ int main(int argc, char *argv[])
 
     // Création des processus de réception
     try {
-      std::thread first_thread(player_thread, &first_client, first_messages);
+      std::thread first_thread(player_thread, &first_client, &second_client, first_messages);
       first_thread.detach();
-      std::thread second_thread(player_thread, &second_client, second_messages);
+      std::thread second_thread(player_thread, &second_client, &first_client, second_messages);
       second_thread.detach();
     } catch(std::exception &e) {
       exit(-1);
@@ -216,7 +227,6 @@ int main(int argc, char *argv[])
         while(!msg_lu) {
           msg_lu = first_messages->poll(new_message);
           if(!msg_lu) {
-            printf("rien...");
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
           }
         }

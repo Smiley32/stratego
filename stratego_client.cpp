@@ -35,6 +35,12 @@
 
 using boost::asio::ip::tcp;
 
+struct ChatText {
+  int length;
+  char txt[100];
+  Side side;
+};
+
 int connection(tcp::socket** socket, char *ip, char *port) {
   boost::asio::io_service io_service;
   tcp::resolver resolver(io_service);
@@ -83,10 +89,26 @@ enum class CustomError {
 };
 
 // Thread qui va communiquer avec le serveur
-void reception_thread(tcp::socket* socket, gf::Queue<Message>* messages) {
+void reception_thread(tcp::socket* socket, gf::Queue<Message>* messages, std::list<ChatText> *chat_messages) {
+  gf::Queue<Message> tmp;
+
   bool fatalError = false;
   while( !fatalError ) {
-    fatalError = !get_message(*socket, *messages);
+    fatalError = !get_message(*socket, tmp);
+
+    Message msg;
+    while(tmp.poll(msg)) {
+      if(msg.id != ID_message::Text) {
+        messages->push(msg);
+      } else {
+        ChatText ct;
+        ct.length = msg.data.text.length;
+        memcpy(ct.txt, msg.data.text.txt, ct.length * sizeof(char));
+        ct.side = Side::Blue;
+
+        chat_messages->push_back(ct);
+      }
+    }
   }
 }
 
@@ -117,6 +139,10 @@ bool escFct(gf::RenderWindow &renderer, gf::UI &ui, bool &aide) {
   renderer.draw(ui);
 
   return ret;
+}
+
+void chatUi(gf::RenderWindow &renderer, gf::UI &ui, bool &displayChat) {
+  
 }
 
 /**
@@ -253,6 +279,9 @@ int main(int argc, char *argv[]) {
   gf::Queue<Message> messages;
   tcp::socket *socket;
 
+  // File contenant les messages de chat
+  std::list<ChatText> chat_messages;
+
   gf::RectF world(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
   gf::ViewContainer views;
   gf::ScreenView screenView;
@@ -266,6 +295,16 @@ int main(int argc, char *argv[]) {
   gf::Texture background_texture;
   background_texture.loadFromFile("fond.jpg");
   background.setTexture(background_texture);
+
+  gf::Texture chat_logo_texture;
+  chat_logo_texture.loadFromFile("chat.png");
+  gf::RectangleShape chat_logo(gf::RectF(10, 10, 50, 50));
+  chat_logo.setTexture(chat_logo_texture);
+
+  gf::Texture chat_logo_hover_texture;
+  chat_logo_hover_texture.loadFromFile("chatHover.png");
+  gf::RectangleShape chat_logo_hover(gf::RectF(10, 10, 50, 50));
+  chat_logo_hover.setTexture(chat_logo_hover_texture);
 
   /******************************************************************/
   /***
@@ -351,7 +390,7 @@ int main(int argc, char *argv[]) {
           connection(&socket, servIp, servPort);
 
           // Création du thread qui va se connecter au serveur
-          std::thread rt(reception_thread, socket, &messages);
+          std::thread rt(reception_thread, socket, &messages, &chat_messages);
 
           rt.detach();
 
@@ -403,6 +442,9 @@ int main(int argc, char *argv[]) {
   /***
   /******************************************************************/
 
+  static char msgText[100];
+  static std::size_t msgLength;
+
   state = State::Placing;
 
   // Erreur de placement des pièces (-1 si aucune)
@@ -410,6 +452,8 @@ int main(int argc, char *argv[]) {
 
   bool uiOpen = false; // Pour que si une fenêtre est ouverte, on ne puisse pas cliquer autre part
   bool aide = false;
+  bool displayChat = false;
+  bool chatHover = false;
 
   while(window.isOpen() && state != State::PlacingOver) {
       gf::Event event;
@@ -419,7 +463,16 @@ int main(int argc, char *argv[]) {
         actions.processEvent(event);
 
         if(event.type == gf::EventType::MouseMoved) {
+          if(event.mouseCursor.coords.x > 10 && event.mouseCursor.coords.x < 10 + 50 && event.mouseCursor.coords.y > 10 && event.mouseCursor.coords.y < 10 + 50) {
+            chatHover = true;
+          } else {
+            chatHover = false;
+          }
           s.updateMouseCoords(renderer.mapPixelToCoords(event.mouseCursor.coords));
+        }
+
+        if(event.type == gf::EventType::MouseButtonPressed && chatHover) {
+          displayChat = true;
         }
 
         if(event.type == gf::EventType::MouseButtonPressed && state == State::Placing && !displayEscUi && !aide) {
@@ -505,7 +558,9 @@ int main(int argc, char *argv[]) {
       }
 
       if(escAction.isActive()) {
-        if(aide) {
+        if(displayChat) {
+          displayChat = false;
+        } else if(aide) {
           aide = false;
         } else {
           if(!escPressed) {
@@ -517,7 +572,7 @@ int main(int argc, char *argv[]) {
         escPressed = false;
       }
 
-      if(placementAleatoireAction.isActive()) {
+      if(placementAleatoireAction.isActive() && !displayChat) {
         // Placement aléatoire de toutes les pièces restantes
         
         Piece p = s.getRandomPiece();
@@ -529,7 +584,7 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      if(validAction.isActive()) {
+      if(validAction.isActive() && !displayChat) {
         // On appuie sur entrer pour envoyer les pièces au serveur
         if(!s.isEmpty()) {
           // Il reste des pièces à placer
@@ -603,6 +658,51 @@ int main(int argc, char *argv[]) {
 
       renderer.setView(screenView);
       // UI
+      if(!displayChat) {
+        if(!chatHover) {
+          renderer.draw(chat_logo);
+        } else {
+          renderer.draw(chat_logo_hover);
+        }
+      } else {
+        if(ui.begin("Chat", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Title)) {
+
+          ui.layoutRowDynamic(25, 1);
+
+          for(ChatText ct : chat_messages) {
+            if(ct.side == Side::Red) {
+              ui.labelColored(gf::Color4f({1, 0, 0, 1}), ct.txt);
+            } else {
+              ui.labelColored(gf::Color4f({0, 0, 1, 1}), ct.txt);
+            }
+          }
+
+          ui.edit(gf::UIEditType::Simple, msgText, msgLength, gf::UIEditFilter::Ascii);
+
+          if(ui.buttonLabel("Envoyer")) {
+            printf("Message : %s - length = %zu\n", msgText, msgLength);
+            if(msgLength < 100 && msgLength > 0) {
+              ChatText ct;
+              ct.length = msgLength;
+              memcpy(ct.txt, msgText, msgLength * sizeof(char));
+              ct.txt[ct.length] = '\0';
+              ct.side = Side::Red;
+
+              msgLength = 0;
+              msgText = "";
+
+              chat_messages.push_back(ct);
+
+              printf("sending msg...\n");
+              send_message(*socket, create_text_message(ct.length, ct.txt));
+            }
+          }
+        }
+
+        ui.end();
+        renderer.draw(ui);
+      }
+
       if(state == State::FatalError) {
         // Afficher la fenêtre d'UI
         if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
@@ -853,6 +953,8 @@ int main(int argc, char *argv[]) {
         state = State::Exit;
       }
     }
+
+    chatUi(renderer, ui, displayChat);
 
     renderer.setView(extendView);
     if(displayStateUi(window, renderer, ui, state)) {

@@ -163,12 +163,13 @@ bool get_message(tcp::socket &socket, gf::Queue<Message> &file) {
         }
         break;
       case (int)ID_message::Text:
-        length = msg[1];
+        length = msg[1] + 2;
         break;
       default:
         length = 1;
         break;
     }
+    
     file.push(str_to_message(msg));
 
     continuer = false;
@@ -257,7 +258,9 @@ void send_message(tcp::socket &socket, Message our_message) {
       p.append(our_message.data.text.length);
       for(int i = 0; i < our_message.data.text.length; i++) {
         p.append(our_message.data.text.txt[i]);
+        printf("%c", our_message.data.text.txt[i]);
       }
+      printf("-\n");
       gf::Log::info("Send signal Text (7)\n");
     }
     break;
