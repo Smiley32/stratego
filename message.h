@@ -24,8 +24,7 @@ using boost::asio::ip::tcp;
 #define UPDATE_INDEX 1
 #define COLLISION 1
 
-enum class ID_message : int
-{
+enum class ID_message : int {
   Error = -1,
   Accept = 0,
   Initiate = 1,
@@ -33,46 +32,42 @@ enum class ID_message : int
   Move = 3,
   Update = 4,
   End = 5,
-  Quit = 6
+  Quit = 6,
+  Text = 7
 };
 
-enum class Result : int
-{
+enum class Result : int {
   Lose = 0,
   Win = 1,
   Draw = 2
 };
 
-typedef struct Movement Movement;
-struct Movement
-{
+struct Movement {
   int source;
   int target;
 };
 
-typedef struct Resumed_piece Resumed_piece;
-struct Resumed_piece
-{
+struct Resumed_piece {
   int pos;
   int value;
 };
 
-typedef struct Initialize Initialize;
-struct Initialize
-{
+struct Initialize {
   Resumed_piece pieces[PLAYER_MAX_PIECES];
 };
 
-typedef struct Update Update;
-struct Update
-{
+struct Update {
   bool collision;
   Movement movement;
   int enemy_value;
   Result result;
 };
 
-typedef struct Message Message;
+struct Text {
+  int length;
+  char txt[100];
+};
+
 struct Message
 {
   ID_message id;
@@ -85,6 +80,7 @@ struct Message
     Update update;
     Result end;
     // quit: rien
+    Text text;
   };
   data data;
 };
@@ -193,6 +189,15 @@ Message create_end_message(bool result);
  * @return Message: la structure prête à l'envoi
  */
 Message create_quit_message();
+
+/**
+ * Fonction qui prépare la structure de message texte
+ * 
+ * @param int length Taille du texte à envoyer (<= 100)
+ * @param char text[100] Chaine à envoyer
+ * @return Message: la structure prête à l'envoi
+ */
+Message create_text_message(int length, char text[100]);
 
 /**
  *  Fonction utilisée dans la dé-sérialisation des données

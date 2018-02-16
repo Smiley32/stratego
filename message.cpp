@@ -104,13 +104,23 @@ static Message str_to_message(boost::array<char, 128> msg) {
       gf::Log::info("\nReception message Quit (6)\n");
     }
     break;
+    case (int) ID_message::Text:
+    {
+      new_message.id = ID_message::Text;
+      new_message.data.text.length = msg[1];
+
+      for(int i = 0; i < new_message.data.text.length; i++) {
+        new_message.data.text.txt[i] = msg[2 + i];
+      }
+      gf::Log::info("Reception message texte (7)\n");
+    }
+    break;
   }
 
   return new_message;
 }
 
-Message get_message(tcp::socket &socket)
-{
+Message get_message(tcp::socket &socket) {
   size_t length;
   boost::array<char, 128> msg = get_char_message(socket, length);
 
@@ -152,6 +162,9 @@ bool get_message(tcp::socket &socket, gf::Queue<Message> &file) {
           length = 4;
         }
         break;
+      case (int)ID_message::Text:
+        length = msg[1];
+        break;
       default:
         length = 1;
         break;
@@ -167,14 +180,12 @@ bool get_message(tcp::socket &socket, gf::Queue<Message> &file) {
       continuer = true;
       read_length -= length;
     }
-
   } while(continuer && !error);
 
   return !error;
 }
 
-void send_message(tcp::socket &socket, Message our_message)
-{
+void send_message(tcp::socket &socket, Message our_message) {
   Packet p;
 
   p.append((int) our_message.id);
@@ -196,8 +207,7 @@ void send_message(tcp::socket &socket, Message our_message)
     {
       gf::Log::info("\nSend signal Initiate (1) with values:\n");
 
-      for (size_t i = 0; i < PLAYER_MAX_PIECES; i++)
-      {
+      for (size_t i = 0; i < PLAYER_MAX_PIECES; i++) {
         gf::Log::info("\t%zu:Piece %d at position %d\n", i, our_message.data.initiate.pieces[i].value, our_message.data.initiate.pieces[i].pos);
         p.append(our_message.data.initiate.pieces[i].pos);
         p.append(our_message.data.initiate.pieces[i].value);
@@ -222,14 +232,11 @@ void send_message(tcp::socket &socket, Message our_message)
       p.append(our_message.data.update.movement.source);
       p.append(our_message.data.update.movement.target);
 
-      if (our_message.data.update.collision)
-      {
+      if (our_message.data.update.collision) {
         gf::Log::info("\nSend signal Update (4) with collision, movement is %d from %d, enemy piece is %d, the result for you is %d", our_message.data.update.movement.source, our_message.data.update.movement.target, our_message.data.update.enemy_value, (int) our_message.data.update.result);
         p.append(our_message.data.update.enemy_value);
         p.append((int) our_message.data.update.result);
-      }
-      else
-      {
+      } else {
         gf::Log::info("\nSend signal Update (4) without collision, movement is %d from %d\n", our_message.data.update.movement.source, our_message.data.update.movement.target);
       }
     }
@@ -245,13 +252,21 @@ void send_message(tcp::socket &socket, Message our_message)
       gf::Log::info("\nSend signal Quit (6)\n");
     }
     break;
+    case ID_message::Text:
+    {
+      p.append(our_message.data.text.length);
+      for(int i = 0; i < our_message.data.text.length; i++) {
+        p.append(our_message.data.text.txt[i]);
+      }
+      gf::Log::info("Send signal Text (7)\n");
+    }
+    break;
   }
 
   send_packet(&socket, p);
 }
 
-Message create_accept_message(bool accepted)
-{
+Message create_accept_message(bool accepted) {
   Message new_message;
   new_message.id = ID_message::Accept;
   new_message.data.accept = accepted;
@@ -259,8 +274,7 @@ Message create_accept_message(bool accepted)
   return new_message;
 }
 
-Message create_initiate_message(struct Initialize pieces)
-{
+Message create_initiate_message(struct Initialize pieces) {
   Message new_message;
   new_message.id = ID_message::Initiate;
   new_message.data.initiate = pieces;
@@ -268,16 +282,14 @@ Message create_initiate_message(struct Initialize pieces)
   return new_message;
 }
 
-Message create_play_message()
-{
+Message create_play_message() {
   Message new_message;
   new_message.id = ID_message::Play;
 
   return new_message;
 }
 
-Message create_move_message(struct Movement movement)
-{
+Message create_move_message(struct Movement movement) {
   Message new_message;
   new_message.id = ID_message::Move;
   new_message.data.move = movement;
@@ -285,8 +297,7 @@ Message create_move_message(struct Movement movement)
   return new_message;
 }
 
-Message create_update_message(struct Movement movement)
-{
+Message create_update_message(struct Movement movement) {
   Message new_message;
   new_message.id = ID_message::Update;
   new_message.data.update.collision = false;
@@ -295,8 +306,7 @@ Message create_update_message(struct Movement movement)
   return new_message;
 }
 
-Message create_update_message(struct Movement movement, int enemy_value, Result result)
-{
+Message create_update_message(struct Movement movement, int enemy_value, Result result) {
   Message new_message = create_update_message(movement);
   new_message.data.update.collision = true;
   new_message.data.update.enemy_value = enemy_value;
@@ -305,8 +315,7 @@ Message create_update_message(struct Movement movement, int enemy_value, Result 
   return new_message;
 }
 
-Message create_end_message(bool result)
-{
+Message create_end_message(bool result) {
   Message new_message;
   new_message.id = ID_message::End;
   new_message.data.end = result ? Result::Win : Result::Lose;
@@ -314,18 +323,29 @@ Message create_end_message(bool result)
   return new_message;
 }
 
-Message create_quit_message()
-{
+Message create_quit_message() {
   Message new_message;
   new_message.id = ID_message::Quit;
 
   return new_message;
 }
 
-Message create_error_message()
-{
+Message create_error_message() {
   Message new_message;
   new_message.id = ID_message::Error;
+
+  return new_message;
+}
+
+Message create_text_message(int length, char text[100]) {
+  Message new_message;
+  new_message.id = ID_message::Text;
+
+  assert(length <= 100 && length > 0);
+
+  new_message.data.text.length = length;
+
+  memcpy(new_message.data.text.txt, text, length * (sizeof(char)));
 
   return new_message;
 }
