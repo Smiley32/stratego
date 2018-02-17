@@ -147,82 +147,38 @@ void chatUi(gf::RenderWindow &renderer, gf::UI &ui, bool &displayChat) {
 
 /**
  * Affiche les UIs nécessaires en fonction de la valeur de state
- * 
- * @return bool true si l'utilisateur a demandé à quitter
  */
-bool displayStateUi(gf::Window &window, gf::RenderWindow &renderer, gf::UI &ui, State state) {
-  bool ret = false;
+void displayStateUi(gf::ResourceManager &resources, gf::RenderWindow &renderer, State state) {
+  gf::RectF image_rect(DEFAULT_GRID_X, 10, 640, 50);
 
-  gf::RectF rect(DEFAULT_GRID_X, 0, 640, 100);
-
-  if(state == State::Win) {
-    if(ui.begin("Victoire !", rect, gf::UIWindow::Title)) {
-
-      ui.layoutRowDynamic(25, 1);
-
-      ui.label("Félicitations, vous avez gagné !");
-    }
-
-    ui.end();
-    renderer.draw(ui);
-  } else if(state == State::Lose) {
-    if(ui.begin("Défaite...", rect, gf::UIWindow::Title)) {
-
-      ui.layoutRowDynamic(25, 1);
-
-      ui.label("Dommage, vous avez perdu");
-    }
-
-    ui.end();
-    renderer.draw(ui);
+  gf::RectangleShape shape(image_rect);
+  switch(state) {
+    case State::Win:
+      shape.setTexture(resources.getTexture("victory.png"));
+      break;
+    case State::Lose:
+      shape.setTexture(resources.getTexture("loss.png"));
+      break;
+    case State::WaitAnswer:
+      shape.setTexture(resources.getTexture("waitPlayer.png"));
+      break;
+    case State::WaitUpdate:
+      shape.setTexture(resources.getTexture("wait.png"));
+      break;
+    case State::WaitPlayer:
+      shape.setTexture(resources.getTexture("wait2.png"));
+      break;
+    case State::FatalError:
+      shape.setTexture(resources.getTexture("error.png"));
+      break;
+    case State::Play:
+      shape.setTexture(resources.getTexture("play.png"));
+      break;
+    default:
+      shape.setTexture(resources.getTexture("default.png"));
+      break;
   }
-
-  if(state == State::WaitAnswer) {
-    if(ui.begin("Pause", rect, gf::UIWindow::Title)) {
-
-      ui.layoutRowDynamic(25, 1);
-
-      ui.label("Attente de la confirmation du serveur");
-    }
-
-    ui.end();
-    renderer.draw(ui);
-  }
-
-  if(state == State::WaitUpdate || state == State::WaitPlayer) {
-    if(ui.begin("Pause", rect, gf::UIWindow::Title)) {
-
-      ui.layoutRowDynamic(25, 1);
-
-      if(state == State::WaitPlayer) {
-        ui.label("Attente de l'autre joueur");
-      } else {
-        ui.label("Votre adversaire joue");
-      }
-    }
-
-    ui.end();
-    renderer.draw(ui);
-  }
-
-  if(state == State::FatalError) {
-    // Afficher la fenêtre d'UI
-    if(ui.begin("Erreur", rect, gf::UIWindow::Title)) {
-
-      ui.layoutRowDynamic(25, 1);
-
-      ui.label("Le serveur a rencontré une erreur");
-
-      if(ui.buttonLabel("OK (quitter)")) {
-        ret = true;
-      }
-    }
-
-    ui.end();
-    renderer.draw(ui);
-  }
-
-  return ret;
+  renderer.draw(shape);
 }
 
 int main(int argc, char *argv[]) {
@@ -248,7 +204,7 @@ int main(int argc, char *argv[]) {
 
   // Resource manager
   gf::ResourceManager resources;
-  resources.addSearchDir(".");
+  resources.addSearchDir("images");
 
   gf::EntityContainer entities;
 
@@ -292,19 +248,13 @@ int main(int argc, char *argv[]) {
 
   gf::RectF extendedWorld = world.extend(1000);
   gf::RectangleShape background(extendedWorld);
-  gf::Texture background_texture;
-  background_texture.loadFromFile("fond.jpg");
-  background.setTexture(background_texture);
+  background.setTexture(resources.getTexture("fond.jpg"));
 
-  gf::Texture chat_logo_texture;
-  chat_logo_texture.loadFromFile("chat.png");
   gf::RectangleShape chat_logo(gf::RectF(10, 10, 50, 50));
-  chat_logo.setTexture(chat_logo_texture);
+  chat_logo.setTexture(resources.getTexture("chat.png"));
 
-  gf::Texture chat_logo_hover_texture;
-  chat_logo_hover_texture.loadFromFile("chatHover.png");
   gf::RectangleShape chat_logo_hover(gf::RectF(10, 10, 50, 50));
-  chat_logo_hover.setTexture(chat_logo_hover_texture);
+  chat_logo_hover.setTexture(resources.getTexture("chatHover.png"));
 
   /******************************************************************/
   /***
@@ -665,6 +615,7 @@ int main(int argc, char *argv[]) {
           renderer.draw(chat_logo_hover);
         }
       } else {
+        displayEscUi = false;
         if(ui.begin("Chat", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Title)) {
 
           ui.layoutRowDynamic(25, 1);
@@ -689,30 +640,12 @@ int main(int argc, char *argv[]) {
               ct.side = Side::Red;
 
               msgLength = 0;
-              msgText = "";
 
               chat_messages.push_back(ct);
 
               printf("sending msg...\n");
               send_message(*socket, create_text_message(ct.length, ct.txt));
             }
-          }
-        }
-
-        ui.end();
-        renderer.draw(ui);
-      }
-
-      if(state == State::FatalError) {
-        // Afficher la fenêtre d'UI
-        if(ui.begin("Erreur", gf::RectF(renderer.getSize().x / 2 - 100, renderer.getSize().y / 2 - 100, 200, 200), gf::UIWindow::Border | gf::UIWindow::Title)) {
-
-          ui.layoutRowDynamic(25, 1);
-
-          ui.label("Le serveur a rencontré une erreur");
-
-          if(ui.buttonLabel("OK (quitter)")) {
-            window.close();
           }
         }
 
@@ -761,8 +694,8 @@ int main(int argc, char *argv[]) {
 
       renderer.setView(extendView);
 
-      if(displayStateUi(window, renderer, ui, state)) {
-        state = State::Exit;
+      if(!displayChat) {
+        displayStateUi(resources, renderer, state);
       }
 
       if(state == State::Exit) {
@@ -815,6 +748,18 @@ int main(int argc, char *argv[]) {
       ui.processEvent(event);
       views.processEvent(event);
 
+      if(event.type == gf::EventType::MouseMoved) {
+        if(event.mouseCursor.coords.x > 10 && event.mouseCursor.coords.x < 10 + 50 && event.mouseCursor.coords.y > 10 && event.mouseCursor.coords.y < 10 + 50) {
+          chatHover = true;
+        } else {
+          chatHover = false;
+        }
+      }
+
+      if(event.type == gf::EventType::MouseButtonPressed && chatHover) {
+        displayChat = true;
+      }
+
       if(event.type == gf::EventType::MouseButtonPressed) {
 
         if(event.mouseButton.button == gf::MouseButton::Left && state == State::Play) {
@@ -842,7 +787,9 @@ int main(int argc, char *argv[]) {
     }
 
     if(escAction.isActive()) {
-      if(aide) {
+      if(displayChat) {
+        displayChat = false;
+      } else if(aide) {
         aide = false;
       } else {
         if(!escPressed) {
@@ -864,6 +811,53 @@ int main(int argc, char *argv[]) {
     renderer.setView(extendView);
     renderer.draw(background);
     entities.render(renderer);
+
+    renderer.setView(screenView);
+    if(!displayChat) {
+      if(!chatHover) {
+        renderer.draw(chat_logo);
+      } else {
+        renderer.draw(chat_logo_hover);
+      }
+    } else {
+      displayEscUi = false;
+      if(ui.begin("Chat", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Title)) {
+
+        ui.layoutRowDynamic(25, 1);
+
+        for(ChatText ct : chat_messages) {
+          if(ct.side == Side::Red) {
+            ui.labelColored(gf::Color4f({1, 0, 0, 1}), ct.txt);
+          } else {
+            ui.labelColored(gf::Color4f({0, 0, 1, 1}), ct.txt);
+          }
+        }
+
+        ui.edit(gf::UIEditType::Simple, msgText, msgLength, gf::UIEditFilter::Ascii);
+
+        if(ui.buttonLabel("Envoyer")) {
+          printf("Message : %s - length = %zu\n", msgText, msgLength);
+          if(msgLength < 100 && msgLength > 0) {
+            ChatText ct;
+            ct.length = msgLength;
+            memcpy(ct.txt, msgText, msgLength * sizeof(char));
+            ct.txt[ct.length] = '\0';
+            ct.side = Side::Red;
+
+            msgLength = 0;
+
+            chat_messages.push_back(ct);
+
+            printf("sending msg...\n");
+            send_message(*socket, create_text_message(ct.length, ct.txt));
+          }
+        }
+      }
+
+      ui.end();
+      renderer.draw(ui);
+    }
+    renderer.setView(extendView);
 
     if(aide) {
       gf::Sprite help_sprite;
@@ -954,11 +948,9 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    chatUi(renderer, ui, displayChat);
-
     renderer.setView(extendView);
-    if(displayStateUi(window, renderer, ui, state)) {
-      state = State::Exit;
+    if(!displayChat) {
+      displayStateUi(resources, renderer, state);
     }
 
     if(state == State::Exit) {
