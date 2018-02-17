@@ -855,6 +855,7 @@ int main(int argc, char *argv[]) {
       }
 
       ui.end();
+      ui.setPredefinedStyle(gf::UIPredefinedStyle::Dark);
       renderer.draw(ui);
     }
     renderer.setView(extendView);
