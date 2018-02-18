@@ -313,6 +313,31 @@ bool s_grid::move_piece(gf::Vector2u source, gf::Vector2u dest)
   return false;
 }
 
+int s_grid::aleat(int min, int max) {
+  return rand() % (max - min + 1) + min;
+}
+
+void s_grid::random_move_coords(gf::Vector2u &source, gf::Vector2u &dest, bool inversed) {
+  int random_pos;
+  std::vector<gf::Vector2u> destinations;
+  
+  do {
+    random_pos = aleat(0, NB_CASES - 1);
+    get_vector_coord(&source, random_pos, inversed);
+
+    if(grid[source.x][source.y].side != (inversed ? Side::Red : Side::Blue)) {
+      continue;
+    }
+
+    destinations = getDestinations(source, inversed);
+  } while(destinations.size() == 0);
+  
+  int i = aleat(0, destinations.size() - 1);
+  dest.x = destinations[i].x;
+  dest.y = destinations[i].y;
+
+  printf("\nsource (%d,%d) ; dest (%d,%d)\n", source.x, source.y, dest.x, dest.y);
+}
 
 bool s_grid::game_is_end()
 {
@@ -322,4 +347,106 @@ bool s_grid::game_is_end()
 bool s_grid::had_collision()
 {
   return collision;
+}
+
+std::vector<gf::Vector2u> s_grid::getDestinations(gf::Vector2u coords, bool inversed) {
+
+  std::vector<gf::Vector2u> destinations;
+
+  Side other = inversed ? Side::Blue : Side::Red;
+
+  switch(grid[coords.x][coords.y].rank) {
+    case Rank::Water:
+    case Rank::Empty:
+    case Rank::Bomb:
+    case Rank::Flag:
+      return destinations;
+      break;
+    case Rank::Scout:
+    {
+      // Le scout peut bouger d'autant qu'il veut en ligne, sans passer au dessus des autres pièces
+      // Parcours des cases autour
+      int x = coords.x - 1;
+      while(x >= 0) {
+        if(grid[x][coords.y].rank == Rank::Empty || grid[x][coords.y].side == other) {
+          destinations.push_back({(unsigned)x, (unsigned)coords.y});
+        }
+        
+        if(grid[x][coords.y].rank != Rank::Empty || grid[x][coords.y].side == other) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        x--;
+      }
+
+      x = coords.x + 1;
+      while(x < 10) {
+        if(grid[x][coords.y].rank == Rank::Empty || grid[x][coords.y].side == other) {
+          destinations.push_back({(unsigned)x, (unsigned)coords.y});
+        }
+        
+        if(grid[x][coords.y].rank != Rank::Empty || grid[x][coords.y].side == other) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        x++;
+      }
+
+      int y = coords.y - 1;
+      while(y >= 0) {
+        if(grid[coords.x][y].rank == Rank::Empty || grid[coords.x][y].side == other) {
+          destinations.push_back({(unsigned)coords.x, (unsigned)y});
+        }
+        
+        if(grid[coords.x][y].rank != Rank::Empty || grid[coords.x][y].side == other) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        y--;
+      }
+
+      y = coords.y + 1;
+      while(y < 10) {
+        if(grid[coords.x][y].rank == Rank::Empty || grid[coords.x][y].side == other) {
+          destinations.push_back({(unsigned)coords.x, (unsigned)y});
+        }
+        
+        if(grid[coords.x][y].rank != Rank::Empty || grid[coords.x][y].side == other) {
+          // On arrête de parcourir les cases dans cette direction
+          break;
+        }
+        y++;
+      }
+    }
+      break;
+    default:
+      // Parcours uniquement des 4 cases autour
+      if(coords.x > 0) {
+        if(grid[coords.x - 1][coords.y].rank == Rank::Empty || grid[coords.x - 1][coords.y].side == other) {
+          destinations.push_back({coords.x - 1, coords.y});
+        }
+      }
+
+      if(coords.x + 1 < 10) {
+        if(grid[coords.x + 1][coords.y].rank == Rank::Empty || grid[coords.x + 1][coords.y].side == other) {
+          destinations.push_back({coords.x + 1, coords.y});
+        }
+      }
+
+      if(coords.y > 0) {
+        if(grid[coords.x][coords.y - 1].rank == Rank::Empty || grid[coords.x][coords.y - 1].side == other) {
+          destinations.push_back({coords.x, coords.y - 1});
+        }
+      }
+
+      if(coords.y + 1 < 10) {
+        if(grid[coords.x][coords.y + 1].rank == Rank::Empty || grid[coords.x][coords.y + 1].side == other) {
+          destinations.push_back({coords.x, coords.y + 1});
+        }
+      }
+
+      break;
+  }
+
+  return destinations;
 }

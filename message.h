@@ -20,6 +20,7 @@ using boost::asio::ip::tcp;
 #define ID_INDEX 0
 
 #define PLAYER_MAX_PIECES 40
+#define NB_CASES 100
 
 #define UPDATE_INDEX 1
 #define COLLISION 1

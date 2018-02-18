@@ -897,10 +897,10 @@ int main(int argc, char *argv[]) {
           }
           break;
         case ID_message::Update: // Update
-          if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
+          /*if(state != State::WaitUpdate && state != State::WaitUpdateAfterAnswer) {
             state = State::FatalError;
             break;
-          }
+          }*/
 
           if(state == State::WaitUpdate) {
             state = State::WaitPlaySignal;

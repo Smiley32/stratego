@@ -250,32 +250,49 @@ int main(int argc, char *argv[])
       accepted = false;
       while(!accepted) {
         bool msg_lu = false;
-        while(!msg_lu) {
+        int ms = 0;
+        int delta = 500;
+        bool autoPlay = false;
+        while(!msg_lu && !autoPlay) {
           msg_lu = first_messages->poll(new_message);
           if(!msg_lu) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(delta));
+            if(timed) {
+              ms += delta;
+
+              if(ms >= seconds * 1000) {
+                autoPlay = true;
+              }
+            }
           }
         }
 
-        if(new_message.id != ID_message::Move) {
-          if(new_message.id == ID_message::Quit || new_message.id == ID_message::Error) {
-            gf::Log::error("\nThe client has quited or crashed\n");
-            new_message = create_end_message(true);
-            send_message(*second_client_pointer, new_message);
-            new_message = create_end_message(false);
-            send_message(*first_client_pointer, new_message);
+        if(timed && autoPlay) {
+          // Mouvement automatique aléatoire
+          our_grid.random_move_coords(first_coo2D, second_coo2D, inversed);
+        } else {
+          
+          if(new_message.id != ID_message::Move) {
+            if(new_message.id == ID_message::Quit || new_message.id == ID_message::Error) {
+              gf::Log::error("\nThe client has quited or crashed\n");
+              new_message = create_end_message(true);
+              send_message(*second_client_pointer, new_message);
+              new_message = create_end_message(false);
+              send_message(*first_client_pointer, new_message);
 
-            exit(-1);
+              exit(-1);
+            }
+            gf::Log::error("\nSignal Error: Expected signal Move (3) but get %c\n", buf[0]);
+            continue;
           }
-          gf::Log::error("\nSignal Error: Expected signal Move (3) but get %c\n", buf[0]);
-          continue;
+
+          first_p_pos = new_message.data.move.source;
+          second_p_pos = new_message.data.move.target;
+        
+          get_vector_coord(&first_coo2D, first_p_pos, inversed);
+          get_vector_coord(&second_coo2D, second_p_pos, inversed);
         }
 
-        first_p_pos = new_message.data.move.source;
-        second_p_pos = new_message.data.move.target;
-
-        get_vector_coord(&first_coo2D, first_p_pos, inversed);
-        get_vector_coord(&second_coo2D, second_p_pos, inversed);
         first_p_value = our_grid.get_value(first_coo2D);
         second_p_value = our_grid.get_value(second_coo2D);
 
