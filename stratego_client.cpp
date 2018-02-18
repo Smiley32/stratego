@@ -89,7 +89,7 @@ enum class CustomError {
 };
 
 // Thread qui va communiquer avec le serveur
-void reception_thread(tcp::socket* socket, gf::Queue<Message>* messages, std::list<ChatText> *chat_messages) {
+void reception_thread(tcp::socket* socket, gf::Queue<Message>* messages, std::list<ChatText> *chat_messages, bool *newChatMessage) {
   gf::Queue<Message> tmp;
 
   bool fatalError = false;
@@ -106,6 +106,7 @@ void reception_thread(tcp::socket* socket, gf::Queue<Message>* messages, std::li
         memcpy(ct.txt, msg.data.text.txt, ct.length * sizeof(char));
         ct.side = Side::Blue;
 
+        *newChatMessage = true;
         chat_messages->push_back(ct);
       }
     }
@@ -272,6 +273,7 @@ int main(int argc, char *argv[]) {
   bool displayEscUi = false;
   bool escPressed = false;
   bool error = false;
+  bool newChatMessage = false;
 
   // Première boucle : sélection du serveur
   while(state != State::Connected && window.isOpen()) {
@@ -340,7 +342,7 @@ int main(int argc, char *argv[]) {
           connection(&socket, servIp, servPort);
 
           // Création du thread qui va se connecter au serveur
-          std::thread rt(reception_thread, socket, &messages, &chat_messages);
+          std::thread rt(reception_thread, socket, &messages, &chat_messages, &newChatMessage);
 
           rt.detach();
 

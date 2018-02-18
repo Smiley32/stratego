@@ -32,6 +32,14 @@ void player_thread(tcp::socket *socket, tcp::socket *other, gf::Queue<Message> *
   }
 }
 
+void displayHelp() {
+  gf::Log::info("Use: ./stratego_serv [options] <port>\n");
+  gf::Log::info("\t[options]\n");
+  gf::Log::info("\t\t-h | --help\t\t\t\t Display this help\n");
+  gf::Log::info("\t\t-t <seconds> | --timed <seconds>\t Timed game mode\n");
+  gf::Log::info("\t<port>\t\t\t\t\t Port number\n");
+}
+
 int main(int argc, char *argv[])
 {
   Packet p;
@@ -50,7 +58,7 @@ int main(int argc, char *argv[])
 
   boost::array<char, 128> buf;
   s_grid our_grid;
-  int port;
+  int port = -1;
   int first_p_pos;
   int second_p_pos;
   int piece_value;
@@ -59,6 +67,8 @@ int main(int argc, char *argv[])
   bool red_team_rdy = false;
   bool blue_team_rdy = false;
   bool accepted;
+  bool timed = false;
+  int seconds = 0;
   Piece current_piece;
   gf::Vector2u first_coo2D;
   gf::Vector2u second_coo2D;
@@ -69,17 +79,33 @@ int main(int argc, char *argv[])
   gf::Queue<Message> *first_messages = new gf::Queue<Message>();
   gf::Queue<Message> *second_messages = new gf::Queue<Message>();
 
-  try
-  {
-    if (argc != 2)
-    {
-      gf::Log::error("\nError: Invalid number of arguments\n");
-      exit(1);
+  try {
+    for(int i = 1; i < argc; i++) {
+      if(strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--timed") == 0) {
+        if(argc <= i + 1) {
+          gf::Log::error("Error: Invalid number of arguments\n");
+          displayHelp();
+        } else {
+          timed = true;
+          seconds = atoi(argv[i + 1]);
+          i++;
+          continue;
+        }
+      }
+
+      if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+        displayHelp();
+        exit(0);
+      }
+
+      port = atoi(argv[i]);
+      break;
     }
-    port = atoi(argv[1]);
+
     if(port <= 0) {
-      // Port incorrect, on met une valeur par défaut
-      port = 25565;
+      gf::Log::error("Error: Invalid number of arguments\n");
+      displayHelp();
+      exit(-1);
     }
 
     std::cout << "Port utilisé : " << port << std::endl;
