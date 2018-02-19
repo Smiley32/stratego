@@ -115,6 +115,13 @@ static Message str_to_message(boost::array<char, 128> msg) {
       gf::Log::info("Reception message texte (7)\n");
     }
     break;
+    case (int) ID_message::Type:
+    {
+      new_message.id = ID_message::Type;
+      new_message.data.type.game_type = (Type)msg[1];
+      new_message.data.type.seconds = new_message.data.type.game_type == Type::Timed ? msg[2] : 0;
+    }
+    break;
   }
 
   return new_message;
@@ -141,29 +148,32 @@ bool get_message(tcp::socket &socket, gf::Queue<Message> &file) {
   bool continuer = true;
   bool error = false;
   do {
-    switch(msg[0]) {
-      case (int)ID_message::Error:
+    switch((ID_message)msg[0]) {
+      case ID_message::Error:
         error = true;
         break;
-      case (int)ID_message::Accept:
-      case (int)ID_message::End:
+      case ID_message::Accept:
+      case ID_message::End:
         length = 2;
         break;
-      case (int)ID_message::Initiate:
+      case ID_message::Initiate:
         length = 81;
         break;
-      case (int)ID_message::Move:
+      case ID_message::Move:
         length = 3;
         break;
-      case (int)ID_message::Update:
+      case ID_message::Update:
         if(msg[1]) {
           length = 6;
         } else {
           length = 4;
         }
         break;
-      case (int)ID_message::Text:
+      case ID_message::Text:
         length = msg[1] + 2;
+        break;
+      case ID_message::Type:
+        length = msg[1] == (int)Type::Timed ? 3 : 2;
         break;
       default:
         length = 1;
@@ -258,10 +268,17 @@ void send_message(tcp::socket &socket, Message our_message) {
       p.append(our_message.data.text.length);
       for(int i = 0; i < our_message.data.text.length; i++) {
         p.append(our_message.data.text.txt[i]);
-        printf("%c", our_message.data.text.txt[i]);
       }
-      printf("-\n");
       gf::Log::info("Send signal Text (7)\n");
+    }
+    break;
+    case ID_message::Type:
+    {
+      p.append((int)our_message.data.type.game_type);
+      if(our_message.data.type.game_type == Type::Timed) {
+        p.append(our_message.data.type.seconds);
+      }
+      gf::Log::info("Send signal Type (8)\n");
     }
     break;
   }
@@ -349,6 +366,16 @@ Message create_text_message(int length, char text[100]) {
   new_message.data.text.length = length;
 
   memcpy(new_message.data.text.txt, text, length * (sizeof(char)));
+
+  return new_message;
+}
+
+Message create_type_message(Type game_type, int seconds) {
+  Message new_message;
+  new_message.id = ID_message::Type;
+
+  new_message.data.type.game_type = game_type;
+  new_message.data.type.seconds = seconds;
 
   return new_message;
 }

@@ -24,6 +24,9 @@
 #define DEFAULT_SECOND_BAR_X 864
 #define DEFAULT_SECOND_BAR_Y 36
 
+#define DEFAULT_REBOURS_X 450
+#define DEFAULT_REBOURS_Y 850
+
 gf::Vector2f get_current_position(gf::Vector2u default_pos, double scale);
 
 /**

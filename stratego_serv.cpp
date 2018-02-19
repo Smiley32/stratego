@@ -108,6 +108,8 @@ int main(int argc, char *argv[])
       exit(-1);
     }
 
+    timed && seconds++;
+
     std::cout << "Port utilisé : " << port << std::endl;
 
     // Ecoute des connections
@@ -235,9 +237,9 @@ int main(int argc, char *argv[])
     }
 
     // SIGNAL LANCEMENT DU JEU
-    gf::Log::info("\nSignal 2 for start sent to both client\n");
+    gf::Log::info("\nSignal 8 for type sent to both client\n");
 
-    new_message = create_play_message();
+    new_message = create_type_message(timed ? Type::Timed : Type::Default, seconds - 1);
     send_message(*first_client_pointer, new_message);
     send_message(*second_client_pointer, new_message);
 

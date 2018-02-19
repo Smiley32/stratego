@@ -14,7 +14,6 @@
 #include <gf/Queue.h>
 #include "packet.h"
 
-
 using boost::asio::ip::tcp;
 
 #define ID_INDEX 0
@@ -34,7 +33,8 @@ enum class ID_message : int {
   Update = 4,
   End = 5,
   Quit = 6,
-  Text = 7
+  Text = 7,
+  Type = 8
 };
 
 enum class Result : int {
@@ -69,6 +69,16 @@ struct Text {
   char txt[100];
 };
 
+enum class Type : int {
+  Default = 0,
+  Timed = 1
+};
+
+struct Game_type {
+  Type game_type;
+  int seconds;
+};
+
 struct Message
 {
   ID_message id;
@@ -82,6 +92,7 @@ struct Message
     Result end;
     // quit: rien
     Text text;
+    Game_type type;
   };
   data data;
 };
@@ -199,6 +210,15 @@ Message create_quit_message();
  * @return Message: la structure prête à l'envoi
  */
 Message create_text_message(int length, char text[100]);
+
+/**
+ * Fonction qui prépare la structure de message type
+ * 
+ * @param Type game_type Mode de jeu
+ * @param int seconds Nombre de secondes par tour (0 si game_type == Type::Default)
+ * @return Message: la structure prête à l'envoi
+ */
+Message create_type_message(Type game_type, int seconds);
 
 /**
  *  Fonction utilisée dans la dé-sérialisation des données

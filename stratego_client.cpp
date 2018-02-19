@@ -257,6 +257,9 @@ int main(int argc, char *argv[]) {
   gf::RectangleShape chat_logo_hover(gf::RectF(10, 10, 50, 50));
   chat_logo_hover.setTexture(resources.getTexture("chatHover.png"));
 
+  gf::RectangleShape chat_logo_new(gf::RectF(10, 10, 50, 50));
+  chat_logo_new.setTexture(resources.getTexture("chatNew.png"));
+
   /******************************************************************/
   /***
   /***
@@ -425,6 +428,7 @@ int main(int argc, char *argv[]) {
 
         if(event.type == gf::EventType::MouseButtonPressed && chatHover) {
           displayChat = true;
+          newChatMessage = false;
         }
 
         if(event.type == gf::EventType::MouseButtonPressed && state == State::Placing && !displayEscUi && !aide) {
@@ -616,6 +620,10 @@ int main(int argc, char *argv[]) {
         } else {
           renderer.draw(chat_logo_hover);
         }
+
+        if(newChatMessage) {
+          renderer.draw(chat_logo_new);
+        }
       } else {
         displayEscUi = false;
         if(ui.begin("Chat", gf::RectF(0, 0, renderer.getSize().x, renderer.getSize().y), gf::UIWindow::Title)) {
@@ -740,6 +748,14 @@ int main(int argc, char *argv[]) {
   bool pause = true;
   bool waitForConfirm = false;
 
+  Type gamemode = Type::Default;
+  int seconds = 0;
+
+  gf::Text rebours("0", font, 100);
+  rebours.setPosition({DEFAULT_REBOURS_X, DEFAULT_REBOURS_Y});
+
+  float rebours_float = 0;
+
   // Boucle principale de jeu
   while(window.isOpen()) {
     gf::Event event;
@@ -760,6 +776,7 @@ int main(int argc, char *argv[]) {
 
       if(event.type == gf::EventType::MouseButtonPressed && chatHover) {
         displayChat = true;
+        newChatMessage = false;
       }
 
       if(event.type == gf::EventType::MouseButtonPressed) {
@@ -806,6 +823,7 @@ int main(int argc, char *argv[]) {
     // Update
 
     gf::Time time = clock.restart();
+    float dt = time.asSeconds();
     g.update(time);
 
     // Draw
@@ -814,12 +832,22 @@ int main(int argc, char *argv[]) {
     renderer.draw(background);
     entities.render(renderer);
 
+    if(gamemode == Type::Timed) {
+      rebours_float -= dt;
+      rebours.setString(std::to_string((int)rebours_float));
+      renderer.draw(rebours);
+    }
+
     renderer.setView(screenView);
     if(!displayChat) {
       if(!chatHover) {
         renderer.draw(chat_logo);
       } else {
         renderer.draw(chat_logo_hover);
+      }
+
+      if(newChatMessage) {
+        renderer.draw(chat_logo_new);
       }
     } else {
       displayEscUi = false;
@@ -889,6 +917,13 @@ int main(int argc, char *argv[]) {
             state = State::WaitUpdateAfterAnswer;
           }
           break;
+        case ID_message::Type:
+          gamemode = msg.data.type.game_type;
+          seconds = msg.data.type.seconds;
+          rebours_float = seconds;
+          if(gamemode == Type::Timed) {
+            printf("Timed mode, %d seconds / tour\n", seconds);
+          }
         case ID_message::Play: // Jouer
           if(state == State::WaitPlayer) {
             state = State::WaitUpdate;
@@ -907,6 +942,8 @@ int main(int argc, char *argv[]) {
           } else {
             state = State::WaitUpdate;
           }
+
+          rebours_float = seconds;
 
           gf::Vector2u firstCoords;
           get_vector_coord(&firstCoords, msg.data.update.movement.source, true);
