@@ -108,6 +108,10 @@ int main(int argc, char *argv[])
       exit(-1);
     }
 
+    if(seconds <= 0) {
+      seconds = 1;
+    }
+
     timed && seconds++;
 
     std::cout << "Port utilisé : " << port << std::endl;
@@ -166,7 +170,7 @@ int main(int argc, char *argv[])
     } catch(std::exception &e) {
       exit(-1);
     }
-    
+
     our_grid.create_empty_grid();
 
     // Boucle d'acceptation des pièces
@@ -273,7 +277,7 @@ int main(int argc, char *argv[])
           // Mouvement automatique aléatoire
           our_grid.random_move_coords(first_coo2D, second_coo2D, inversed);
         } else {
-          
+
           if(new_message.id != ID_message::Move) {
             if(new_message.id == ID_message::Quit || new_message.id == ID_message::Error) {
               gf::Log::error("\nThe client has quited or crashed\n");
@@ -290,7 +294,7 @@ int main(int argc, char *argv[])
 
           first_p_pos = new_message.data.move.source;
           second_p_pos = new_message.data.move.target;
-        
+
           get_vector_coord(&first_coo2D, first_p_pos, inversed);
           get_vector_coord(&second_coo2D, second_p_pos, inversed);
         }

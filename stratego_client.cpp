@@ -115,7 +115,7 @@ void reception_thread(tcp::socket* socket, gf::Queue<Message>* messages, std::li
 
 /**
  * Affiche la fenetre de 'pause' (quand on appuie sur ESC)
- * 
+ *
  * @return bool true si l'utilisateur a demandé à quitter
  */
 bool escFct(gf::RenderWindow &renderer, gf::UI &ui, bool &aide) {
@@ -143,7 +143,7 @@ bool escFct(gf::RenderWindow &renderer, gf::UI &ui, bool &aide) {
 }
 
 void chatUi(gf::RenderWindow &renderer, gf::UI &ui, bool &displayChat) {
-  
+
 }
 
 /**
@@ -514,11 +514,9 @@ int main(int argc, char *argv[]) {
       }
 
       if(escAction.isActive()) {
-        if(displayChat) {
-          displayChat = false;
-        } else if(aide) {
+        if(aide && !displayChat) {
           aide = false;
-        } else {
+        } else if(!displayChat) {
           if(!escPressed) {
             displayEscUi = !displayEscUi;
           }
@@ -530,12 +528,12 @@ int main(int argc, char *argv[]) {
 
       if(placementAleatoireAction.isActive() && !displayChat) {
         // Placement aléatoire de toutes les pièces restantes
-        
+
         Piece p = s.getRandomPiece();
         while(p.rank != Rank::Empty) {
           g.setPieceRandom(p);
           s.takeOnePiece((int)p.rank);
-          
+
           p = s.getRandomPiece();
         }
       }
@@ -575,7 +573,7 @@ int main(int argc, char *argv[]) {
       renderer.setView(extendView);
       renderer.draw(background);
       entities.render(renderer);
-      
+
       if(aide) {
         gf::Sprite help_sprite;
         help_sprite.setTexture(resources.getTexture("help.png"));
@@ -656,6 +654,10 @@ int main(int argc, char *argv[]) {
               printf("sending msg...\n");
               send_message(*socket, create_text_message(ct.length, ct.txt));
             }
+          }
+
+          if(ui.buttonLabel("Fermer le tchat")) {
+            displayChat = false;
           }
         }
 
@@ -789,7 +791,7 @@ int main(int argc, char *argv[]) {
               gf::Vector2u source = g.selected;
               gf::Vector2u target = coords;
               send_message(*socket, create_move_message(create_movement(&source, &target, false)));
-              
+
               state = State::WaitUpdateAnswer;
             } else {
               g.selectPiece({(unsigned)coords.x, (unsigned)coords.y});
@@ -806,11 +808,9 @@ int main(int argc, char *argv[]) {
     }
 
     if(escAction.isActive()) {
-      if(displayChat) {
-        displayChat = false;
-      } else if(aide) {
+      if(aide && !displayChat) {
         aide = false;
-      } else {
+      } else if(!displayChat) {
         if(!escPressed) {
           displayEscUi = !displayEscUi;
         }
@@ -833,7 +833,9 @@ int main(int argc, char *argv[]) {
     entities.render(renderer);
 
     if(gamemode == Type::Timed) {
-      rebours_float -= dt;
+      if(state != State::Win && state != State::Lose) {
+        rebours_float -= dt;
+      }
       rebours.setString(std::to_string((int)rebours_float));
       renderer.draw(rebours);
     }
@@ -882,6 +884,10 @@ int main(int argc, char *argv[]) {
             send_message(*socket, create_text_message(ct.length, ct.txt));
           }
         }
+
+        if(ui.buttonLabel("Fermer le tchat")) {
+          displayChat = false;
+        }
       }
 
       ui.end();
@@ -921,9 +927,6 @@ int main(int argc, char *argv[]) {
           gamemode = msg.data.type.game_type;
           seconds = msg.data.type.seconds;
           rebours_float = seconds;
-          if(gamemode == Type::Timed) {
-            printf("Timed mode, %d seconds / tour\n", seconds);
-          }
         case ID_message::Play: // Jouer
           if(state == State::WaitPlayer) {
             state = State::WaitUpdate;
@@ -959,7 +962,7 @@ int main(int argc, char *argv[]) {
             }
           } else {
             // Le serveur précise qu'il y a eu collision (combat) entre deux pièces
-            
+
             // lastPieceBefore -> la valeur de la pièce ennemie
             Piece lastPieceBefore;
             lastPieceBefore.rank = (Rank)( msg.data.update.enemy_value );
